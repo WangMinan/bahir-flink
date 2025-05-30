@@ -79,6 +79,16 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>wso2-nexus</id>
+            <name>WSO2 internal Repository</name>
+            <url>https://maven.wso2.org/nexus/content/groups/wso2-public/</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+                <checksumPolicy>ignore</checksumPolicy>
+            </releases>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
@@ -102,7 +112,8 @@
         <module>flink-connector-netty</module>
         <module>flink-connector-pinot</module>
         <module>flink-connector-redis</module>
-        <module>flink-library-siddhi</module>
+        <!-- 注释掉 siddhi 不然编译会爆炸 -->
+<!--        <module>flink-library-siddhi</module>-->
     </modules>
     <properties>
         <project.build.outputTimestamp>1655387093</project.build.outputTimestamp>

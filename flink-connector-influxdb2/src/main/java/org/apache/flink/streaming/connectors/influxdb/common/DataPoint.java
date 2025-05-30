@@ -17,9 +17,11 @@
  */
 package org.apache.flink.streaming.connectors.influxdb.common;
 
-import com.influxdb.Arguments;
+
+
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
+import com.influxdb.utils.Arguments;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
