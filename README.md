@@ -49,3 +49,7 @@ Testing first requires [building Bahir](#building-bahir). Once Bahir is built, t
 can be run using:
 
     mvn test
+
+## 对于本fork的说明
+
+王旻安正在维护这个fork以使flink-connector-influxdb2的连接器继续可用，目前正在适配的版本为 flink 1.20.0 LTS 与 influxdb 2.7 OSS
