@@ -184,6 +184,21 @@ public final class InfluxDBSinkBuilder<IN> {
     }
 
     /**
+     * 设置批处理间隔时间，用于控制数据刷新到InfluxDB的频率。
+     * 即使缓冲区未满，也会在指定的时间间隔后将数据刷新到InfluxDB。
+     *
+     * @param batchIntervalMs 批处理间隔时间（毫秒）
+     * @return 当前InfluxDBSinkBuilder实例
+     */
+    public InfluxDBSinkBuilder<IN> setBatchIntervalMs(final long batchIntervalMs) {
+        if (batchIntervalMs <= 0) {
+            throw new IllegalArgumentException("The batch interval must be greater than 0 milliseconds.");
+        }
+        this.configuration.setLong(BATCH_INTERVAL_MS, batchIntervalMs);
+        return this;
+    }
+
+    /**
      * Build the {@link org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSink}.
      *
      * @return a InfluxDBSink with the settings made for this builder.

@@ -32,8 +32,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
-import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.*;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.BATCH_INTERVAL_MS;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.WRITE_BUFFER_SIZE;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.WRITE_DATA_POINT_CHECKPOINT;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.getInfluxDBClient;
 
 public class InfluxDBWriter<IN> implements SinkWriter<IN> {
 
@@ -43,50 +50,81 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
     private final boolean writeCheckpoint;
     private long lastTimestamp = 0;
     private final List<Point> elements;
-    private ProcessingTimeService processingTimerService;
     private final InfluxDBSchemaSerializer<IN> schemaSerializer;
     private final InfluxDBClient influxDBClient;
+
+    // 定时线程池
+    private final ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> scheduledFuture;
+    private final Object lock = new Object();
+    private volatile boolean closed = false;
 
     public InfluxDBWriter(
             final InfluxDBSchemaSerializer<IN> schemaSerializer,
             final Configuration configuration) {
         this.schemaSerializer = schemaSerializer;
         this.bufferSize = configuration.getInteger(WRITE_BUFFER_SIZE);
+        long batchIntervalMs = configuration.getLong(BATCH_INTERVAL_MS);
         this.elements = new ArrayList<>(this.bufferSize);
         this.writeCheckpoint = configuration.getBoolean(WRITE_DATA_POINT_CHECKPOINT);
         this.influxDBClient = getInfluxDBClient(configuration);
+
+        // 初始化定时线程池
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "influxdb-writer-timer");
+            t.setDaemon(true);
+            return t;
+        });
+
+        // 启动定时任务
+        this.scheduledFuture = this.scheduler.scheduleWithFixedDelay(
+                this::flushBuffer,
+                batchIntervalMs,
+                batchIntervalMs,
+                TimeUnit.MILLISECONDS);
     }
 
+    // 为了兼容性保留此方法
     public void setProcessingTimerService(final ProcessingTimeService processingTimerService) {
-        this.processingTimerService = processingTimerService;
+        // 这个方法保留但为空，不再使用ProcessingTimeService
     }
 
-    /**
-     * This method calls the InfluxDB write API whenever the element list reaches the {@link
-     * #bufferSize}. It keeps track of the latest timestamp of each element. It compares the latest
-     * timestamp with the context.timestamp() and takes the bigger (latest) timestamp.
-     *
-     * @param in incoming data
-     * @param context current Flink context
-     * @see org.apache.flink.api.connector.sink2.SinkWriter.Context
-     */
+    // 定时器调用的方法
+    private void flushBuffer() {
+        try {
+            synchronized (lock) {
+                if (!closed && !elements.isEmpty()) {
+                    LOG.debug("Timer triggered: flushing {} elements", elements.size());
+                    writeCurrentElements();
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Error while flushing elements", e);
+        }
+    }
+
     @Override
     public void write(IN in, Context context) throws IOException, InterruptedException {
-        LOG.trace("Adding elements to buffer. Buffer size: {}", this.elements.size());
-        this.elements.add(this.schemaSerializer.serialize(in, context));
+        synchronized (lock) {
+            if (closed) {
+                throw new IOException("Writer is already closed");
+            }
 
-        if (this.elements.size() == this.bufferSize) {
-            LOG.debug("Buffer size reached preparing to write the elements.");
-            this.writeCurrentElements();
-        }
-        if (context.timestamp() != null) {
-            this.lastTimestamp = Math.max(this.lastTimestamp, context.timestamp());
-        }
+            LOG.trace("Adding elements to buffer. Buffer size: {}", this.elements.size());
+            this.elements.add(this.schemaSerializer.serialize(in, context));
 
+            if (this.elements.size() >= this.bufferSize) {
+                LOG.debug("Buffer size reached preparing to write the elements.");
+                this.writeCurrentElements();
+            }
+            if (context.timestamp() != null) {
+                this.lastTimestamp = Math.max(this.lastTimestamp, context.timestamp());
+            }
+        }
     }
 
     @Override
-    public void flush(boolean flush) throws IOException, InterruptedException {
+    public void flush(boolean flush) {
         if (this.lastTimestamp == 0) return;
 
         commit(Collections.singletonList(this.lastTimestamp));
@@ -96,7 +134,7 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
         if (this.writeCheckpoint) {
             LOG.debug("A checkpoint is set.");
             Optional<Long> lastTimestamp = Optional.empty();
-            if (committables.size() >= 1) {
+            if (!committables.isEmpty()) {
                 lastTimestamp = Optional.ofNullable(committables.get(committables.size() - 1));
             }
             lastTimestamp.ifPresent(this::writeCheckpointDataPoint);
@@ -113,12 +151,38 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
     }
 
     @Override
-    public void close() throws Exception {
-        LOG.debug("Preparing to write the elements in InfluxDB.");
-        this.writeCurrentElements();
+    public void close() {
+        synchronized (lock) {
+            if (closed) {
+                return;
+            }
+            closed = true;
 
-        LOG.debug("Closing the writer.");
-        this.influxDBClient.close();
+            // 取消定时任务
+            if (scheduledFuture != null) {
+                scheduledFuture.cancel(false);
+                scheduledFuture = null;
+            }
+
+            // 关闭线程池
+            if (scheduler != null) {
+                scheduler.shutdown();
+                try {
+                    if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
+                        scheduler.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    scheduler.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            LOG.debug("Preparing to write the remaining elements in InfluxDB.");
+            this.writeCurrentElements();
+
+            LOG.debug("Closing the writer.");
+            this.influxDBClient.close();
+        }
     }
 
     private void writeCurrentElements() {
@@ -129,11 +193,11 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
     private void writeElementsOf(List<Point> toWrite) {
         if (toWrite.isEmpty()) return;
 
-        try (final WriteApi writeApi = this.influxDBClient.getWriteApi()) {
+        try (final WriteApi writeApi = this.influxDBClient.makeWriteApi()) {
             writeApi.writePoints(toWrite);
             LOG.debug("Wrote {} data points", toWrite.size());
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Error writing data points to InfluxDB", e);
         }
     }
 }

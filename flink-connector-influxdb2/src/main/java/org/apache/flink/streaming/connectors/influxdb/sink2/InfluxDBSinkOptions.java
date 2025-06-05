@@ -42,6 +42,13 @@ public final class InfluxDBSinkOptions {
                     .withDescription(
                             "Size of the buffer to store the data before writing to InfluxDB.");
 
+    public static final ConfigOption<Long> BATCH_INTERVAL_MS =
+            ConfigOptions.key("sink.influxDB.write.batch.interval")
+                    .longType()
+                    .defaultValue(1000L)
+                    .withDescription(
+                            "Flush interval in milliseconds to write buffered data into InfluxDB even if the buffer is not full.");
+
     public static final ConfigOption<String> INFLUXDB_URL =
             ConfigOptions.key("sink.influxDB.client.URL")
                     .stringType()
