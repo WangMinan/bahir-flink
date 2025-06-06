@@ -119,14 +119,14 @@
         <project.build.outputTimestamp>1655387093</project.build.outputTimestamp>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>1.8</java.version>
+        <java.version>21</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Flink version -->
         <flink.version>1.17.0</flink.version>
         <scala.binary.version>2.12</scala.binary.version>
-        <scala.version>2.12.8</scala.version>
+        <scala.version>2.12.18</scala.version>
 
         <!-- General dependencies version -->
         <log4j.version>2.17.1</log4j.version>
@@ -379,7 +379,7 @@
                             <jvmArg>-Xms1024m</jvmArg>
                             <jvmArg>-Xmx1024m</jvmArg>
                             <jvmArg>-XX:PermSize=${PermGen}</jvmArg>
-                            <jvmArg>-XX:MaxPermSize=${MaxPermGen}</jvmArg>
+<!--                            <jvmArg>-XX:MaxPermSize=${MaxPermGen}</jvmArg>-->
                             <jvmArg>-XX:ReservedCodeCacheSize=${CodeCacheSize}</jvmArg>
                         </jvmArgs>
                         <javacArgs>
@@ -651,7 +651,7 @@
                     <!-- Note config is repeated in scalatest config -->
                     <configuration>
                         <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                        <argLine>-Xmx3g -Xss4096k -XX:MaxPermSize=${MaxPermGen} -XX:ReservedCodeCacheSize=512m</argLine>
+                        <argLine>-Xmx3g -Xss4096k</argLine>
                         <systemProperties>
                             <log4j.configuration>file:src/test/resources/log4j.properties</log4j.configuration>
                         </systemProperties>
@@ -789,7 +789,7 @@
                         <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                         <junitxml>.</junitxml>
                         <filereports>ScalaTestsReport.txt</filereports>
-                        <argLine>-ea -Xmx3g -XX:MaxPermSize=${MaxPermGen} -XX:ReservedCodeCacheSize=${CodeCacheSize}</argLine>
+                        <argLine>-ea -Xmx3g</argLine>
                         <stderr />
                         <environmentVariables>
                             <JAVA_HOME>${test.java.home}</JAVA_HOME>
@@ -879,7 +879,7 @@
                 </property>
             </activation>
             <properties>
-                <scala.version>2.12.8</scala.version>
+                <scala.version>2.12.18</scala.version>
                 <scala.binary.version>2.12</scala.binary.version>
             </properties>
             <build>
