@@ -192,7 +192,7 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
     }
 
     private void writeElementsOf(List<Point> toWrite) {
-        LOG.info("Writing {} data points to InfluxDB", toWrite.size());
+        LOG.debug("Writing {} data points to InfluxDB", toWrite.size());
         if (toWrite.isEmpty()) return;
 
         try (final WriteApi writeApi = this.influxDBClient.makeWriteApi()) {
