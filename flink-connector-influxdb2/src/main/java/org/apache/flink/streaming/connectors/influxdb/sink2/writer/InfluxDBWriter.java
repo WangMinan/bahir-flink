@@ -127,6 +127,11 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
     public void flush(boolean flush) {
         if (this.lastTimestamp == 0) return;
 
+        /*
+            Thanks to bahir-flink PR 168
+            https://github.com/apache/bahir-flink/pull/168/commits/d331fd90b4bf04ad53a605a9c1b61a84d5a86607
+         */
+        this.writeCurrentElements();
         commit(Collections.singletonList(this.lastTimestamp));
     }
 
@@ -135,7 +140,7 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
             LOG.debug("A checkpoint is set.");
             Optional<Long> lastTimestamp = Optional.empty();
             if (!committables.isEmpty()) {
-                lastTimestamp = Optional.ofNullable(committables.get(committables.size() - 1));
+                lastTimestamp = Optional.ofNullable(committables.getLast());
             }
             lastTimestamp.ifPresent(this::writeCheckpointDataPoint);
         }
