@@ -51,7 +51,7 @@ public final class DataPoint {
     private final Map<String, Object> fields = new HashMap<>();
     private final Long timestamp;
 
-    DataPoint(final String measurementName, @Nullable final Long timestamp) {
+    public DataPoint(final String measurementName, @Nullable final Long timestamp) {
         Arguments.checkNotNull(measurementName, "measurement");
         this.measurement = measurementName;
         this.timestamp = timestamp;
@@ -158,5 +158,15 @@ public final class DataPoint {
     @Override
     public int hashCode() {
         return Objects.hash(this.measurement, this.fields, this.timestamp);
+    }
+
+    @Override
+    public String toString() {
+        return "DataPoint{" +
+                "measurement='" + measurement + '\'' +
+                ", tags=" + tags +
+                ", fields=" + fields +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }

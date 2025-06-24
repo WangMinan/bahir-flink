@@ -42,6 +42,20 @@ This module is compatible with InfluxDB 2.x and InfluxDB 1.8+. See more informat
 
 ## Source
 
+满足标准的数据源Source语义，现在的InfluxDBSource从InfluxDB读取数据，而不是原先的CDC模式，如果您需要使用bahir原先版本的数据接入逻辑，请使用bahir标准仓库main分支。
+
+现在的InfluxDBSource通过influxdb-client-java分片读取时序数据数据
+
+```mermaid
+flowchart LR
+    InfluxDBDataBase["InfluxDB Database"] -- influxdb-client-java --> InfluxDBSource["InfluxDB Source"]
+    InfluxDBSource -- POJO --> FlinkOperator(("Flink Operator"))
+```
+
+您可以参考[InfluxDBSourceDemo.java](./src/test/java/org/apache/flink/streaming/connectors/influxdb/source/InfluxDBSourceDemo.java)中的用例查看具体用法
+
+## Source(Bahir Former Version)
+
 The Source accepts data in the form of the [Line Protocol](https://docs.influxdata.com/influxdb/v2.0/reference/syntax/line-protocol/). One HTTP server per source instance is started. It parses HTTP requests to our Data Point class. That Data Point instance is deserialized by a user-provided implementation of our InfluxDBDataPointDeserializer and sent to the next Flink operator.
 
 When using Telegraf, use its [HTTP output plugin](https://docs.influxdata.com/telegraf/v1.17/plugins/#http):

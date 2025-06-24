@@ -18,7 +18,12 @@
 package org.apache.flink.streaming.connectors.influxdb.source;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.connector.source.*;
+import org.apache.flink.api.connector.source.Boundedness;
+import org.apache.flink.api.connector.source.Source;
+import org.apache.flink.api.connector.source.SourceReader;
+import org.apache.flink.api.connector.source.SourceReaderContext;
+import org.apache.flink.api.connector.source.SplitEnumerator;
+import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
@@ -28,10 +33,12 @@ import org.apache.flink.streaming.connectors.influxdb.source.enumerator.InfluxDB
 import org.apache.flink.streaming.connectors.influxdb.source.reader.InfluxDBRecordEmitter;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.InfluxDBSourceReader;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.InfluxDBSplitReader;
+import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.DataPointQueryResultDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBDataPointDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.split.InfluxDBSplit;
 import org.apache.flink.streaming.connectors.influxdb.source.split.InfluxDBSplitSerializer;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -41,7 +48,7 @@ import java.util.function.Supplier;
  *
  * <pre>{@code
  * InfluxDBSource<Long> influxDBSource = InfluxBSource.builder()
- * .setDeserializer(new InfluxDBDeserializer())
+ * .setDataPointDeserializer(new InfluxDBDeserializer())
  * .build()
  * }</pre>
  *
@@ -54,33 +61,53 @@ public final class InfluxDBSource<OUT>
 
     private final Configuration configuration;
     private final InfluxDBDataPointDeserializer<OUT> deserializationSchema;
+    private final List<String> whereCondition;
+    private final String bucket;
+    private final String measurement;
+    private final long startTime;
+    private final long endTime;
+    private final long splitDuration;
+    private final Boundedness boundedness;
+    private final DataPointQueryResultDeserializer queryResultDeserializer;
+
 
     InfluxDBSource(
-            final Configuration configuration,
-            final InfluxDBDataPointDeserializer<OUT> deserializationSchema) {
+            Configuration configuration,
+            InfluxDBDataPointDeserializer<OUT> deserializationSchema,
+            String bucket,
+            List<String> whereCondition,
+            String measurement,
+            long startTime,
+            long endTime,
+            long splitDuration,
+            DataPointQueryResultDeserializer queryResultDeserializer) {
         this.configuration = configuration;
         this.deserializationSchema = deserializationSchema;
+        this.bucket = bucket;
+        this.whereCondition = whereCondition;
+        this.measurement = measurement;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.splitDuration = splitDuration;
+        this.queryResultDeserializer = queryResultDeserializer;
+        // 我们在这里用一个常量
+        this.boundedness = Boundedness.BOUNDED;
     }
 
-    /**
-     * Get a influxDBSourceBuilder to build a {@link InfluxDBSource}.
-     *
-     * @return a InfluxDB source builder.
-     */
+    // builder
     public static <OUT> InfluxDBSourceBuilder<OUT> builder() {
         return new InfluxDBSourceBuilder<>();
     }
 
     @Override
     public Boundedness getBoundedness() {
-        return Boundedness.CONTINUOUS_UNBOUNDED;
+        return boundedness;
     }
 
     @Override
-    public SourceReader<OUT, InfluxDBSplit> createReader(
-            final SourceReaderContext sourceReaderContext) {
+    public SourceReader<OUT, InfluxDBSplit> createReader(SourceReaderContext sourceReaderContext) {
         final Supplier<InfluxDBSplitReader> splitReaderSupplier =
-                () -> new InfluxDBSplitReader(this.configuration);
+                () -> new InfluxDBSplitReader(configuration, whereCondition, queryResultDeserializer);
         final InfluxDBRecordEmitter<OUT> recordEmitter =
                 new InfluxDBRecordEmitter<>(this.deserializationSchema);
 
@@ -90,15 +117,30 @@ public final class InfluxDBSource<OUT>
 
     @Override
     public SplitEnumerator<InfluxDBSplit, InfluxDBSourceEnumState> createEnumerator(
-            final SplitEnumeratorContext<InfluxDBSplit> splitEnumeratorContext) {
-        return new InfluxDBSplitEnumerator(splitEnumeratorContext);
+            SplitEnumeratorContext<InfluxDBSplit> splitEnumeratorContext) {
+        return new InfluxDBSplitEnumerator(
+                splitEnumeratorContext,
+                bucket,
+                measurement,
+                startTime,
+                endTime,
+                splitDuration,
+                boundedness);
     }
 
     @Override
     public SplitEnumerator<InfluxDBSplit, InfluxDBSourceEnumState> restoreEnumerator(
-            final SplitEnumeratorContext<InfluxDBSplit> splitEnumeratorContext,
-            final InfluxDBSourceEnumState influxDBSourceEnumState) {
-        return new InfluxDBSplitEnumerator(splitEnumeratorContext);
+            SplitEnumeratorContext<InfluxDBSplit> splitEnumeratorContext,
+            InfluxDBSourceEnumState enumState) {
+        return new InfluxDBSplitEnumerator(
+                splitEnumeratorContext,
+                bucket,
+                measurement,
+                startTime,
+                endTime,
+                splitDuration,
+                boundedness,
+                enumState.getUnassignedSplits());
     }
 
     @Override

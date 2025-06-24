@@ -17,14 +17,45 @@
  */
 package org.apache.flink.streaming.connectors.influxdb.source;
 
+import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.InfluxDBClientFactory;
+import com.influxdb.client.InfluxDBClientOptions;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
+import org.apache.flink.configuration.Configuration;
 
 /* Configurations for a InfluxDBSource. */
 public final class InfluxDBSourceOptions {
 
-    private InfluxDBSourceOptions() {}
+    private InfluxDBSourceOptions() {
+    }
 
+    // 查询和读取相关配置
+    public static final ConfigOption<String> MEASUREMENT_NAME =
+            ConfigOptions.key("source.influxDB.measurement")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB measurement name to query from.");
+
+    public static final ConfigOption<Long> START_TIME =
+            ConfigOptions.key("source.influxDB.query.startTime")
+                    .longType()
+                    .defaultValue(0L)
+                    .withDescription("Start time for the query in nanoseconds since epoch.");
+
+    public static final ConfigOption<Long> END_TIME =
+            ConfigOptions.key("source.influxDB.query.endTime")
+                    .longType()
+                    .defaultValue(Long.MAX_VALUE)
+                    .withDescription("End time for the query in nanoseconds since epoch.");
+
+    public static final ConfigOption<Long> SPLIT_DURATION =
+            ConfigOptions.key("source.influxDB.split.duration")
+                    .longType()
+                    .defaultValue(60 * 60 * 1_000_000_000L)  // 默认1小时（纳秒）
+                    .withDescription("Duration of each split in nanoseconds.");
+
+    // 队列和性能相关配置
     public static final ConfigOption<Long> ENQUEUE_WAIT_TIME =
             ConfigOptions.key("source.influxDB.timeout.enqueue")
                     .longType()
@@ -39,17 +70,61 @@ public final class InfluxDBSourceOptions {
                     .withDescription(
                             "Size of queue that buffers HTTP requests data points before fetching.");
 
-    public static final ConfigOption<Integer> MAXIMUM_LINES_PER_REQUEST =
-            ConfigOptions.key("source.influxDB.limit.lines_per_request")
-                    .intType()
-                    .defaultValue(1000)
-                    .withDescription(
-                            "The maximum number of lines that should be parsed per HTTP request.");
+    // 客户��连接相关配置 - 修正前缀为source.influxDB
+    public static final ConfigOption<String> INFLUXDB_URL =
+            ConfigOptions.key("source.influxDB.client.URL")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB Connection URL.");
 
-    public static final ConfigOption<Integer> PORT =
-            ConfigOptions.key("source.influxDB.port")
-                    .intType()
-                    .defaultValue(8000)
-                    .withDescription(
-                            "TCP port on which the split reader's HTTP server is running on.");
+    public static final ConfigOption<String> INFLUXDB_USERNAME =
+            ConfigOptions.key("source.influxDB.client.username")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB username.");
+
+    public static final ConfigOption<String> INFLUXDB_PASSWORD =
+            ConfigOptions.key("source.influxDB.client.password")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB password.");
+
+    public static final ConfigOption<String> INFLUXDB_TOKEN =
+            ConfigOptions.key("source.influxDB.client.token")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB access token.");
+
+    public static final ConfigOption<String> INFLUXDB_BUCKET =
+            ConfigOptions.key("source.influxDB.client.bucket")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB bucket name.");
+
+    public static final ConfigOption<String> INFLUXDB_ORGANIZATION =
+            ConfigOptions.key("source.influxDB.client.organization")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB organization name.");
+
+    public static InfluxDBClient getInfluxDBClient(final Configuration configuration) {
+        final String url = configuration.get(INFLUXDB_URL);
+        final String username = configuration.get(INFLUXDB_USERNAME);
+        final String password = configuration.get(INFLUXDB_PASSWORD);
+        final String token = configuration.get(INFLUXDB_TOKEN);
+        final String bucket = configuration.get(INFLUXDB_BUCKET);
+        final String organization = configuration.get(INFLUXDB_ORGANIZATION);
+        InfluxDBClientOptions.Builder builder = InfluxDBClientOptions.builder();
+        builder = builder
+                .url(url)
+                .bucket(bucket)
+                .org(organization);
+        if (token != null) {
+            builder = builder.authenticateToken(token.toCharArray());
+        } else if (username != null && password != null) {
+            builder = builder.authenticate(username, password.toCharArray());
+        }
+        final InfluxDBClientOptions influxDBClientOptions = builder.build();
+        return InfluxDBClientFactory.create(influxDBClientOptions);
+    }
 }

@@ -87,8 +87,7 @@ class InfluxDBSourceIntegrationTestCase extends TestLogger {
     void testIncrementPipeline() throws Exception {
         final InfluxDBSource<Long> influxDBSource =
                 InfluxDBSource.builder()
-                        .setPort(this.port)
-                        .setDeserializer(new InfluxDBTestDeserializer())
+                        .setDataPointDeserializer(new InfluxDBTestDeserializer())
                         .build();
 
         this.env
@@ -116,8 +115,7 @@ class InfluxDBSourceIntegrationTestCase extends TestLogger {
     void testBadRequestException() throws Exception {
         final InfluxDBSource<Long> influxDBSource =
                 InfluxDBSource.builder()
-                        .setPort(this.port)
-                        .setDeserializer(new InfluxDBTestDeserializer())
+                        .setDataPointDeserializer(new InfluxDBTestDeserializer())
                         .build();
 
         this.env
@@ -139,9 +137,7 @@ class InfluxDBSourceIntegrationTestCase extends TestLogger {
     void testRequestTooLargeException() throws Exception {
         final InfluxDBSource<Long> influxDBSource =
                 InfluxDBSource.builder()
-                        .setPort(this.port)
-                        .setDeserializer(new InfluxDBTestDeserializer())
-                        .setMaximumLinesPerRequest(2)
+                        .setDataPointDeserializer(new InfluxDBTestDeserializer())
                         .build();
         this.env
                 .fromSource(influxDBSource, WatermarkStrategy.noWatermarks(), "InfluxDBSource")

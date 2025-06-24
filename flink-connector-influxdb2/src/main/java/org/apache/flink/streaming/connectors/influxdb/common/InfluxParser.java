@@ -35,10 +35,10 @@ import java.util.regex.Pattern;
  * This is an InfluxDB line protocol parser.
  *
  * @see <a href=https://docs.influxdata.com/influxdb/v2.0/reference/syntax/line-protocol/">Line
- *     Protocol</a>
+ * Protocol</a>
  * This class contains code copied from the <a
- *     href=https://github.com/apache/druid/blob/master/extensions-contrib/influx-extensions/src/main/java/org/apache/druid/data/input/influx/InfluxParser.java>
- *     Apache Druid InfluxDB Parser </a>, licensed under the Apache License, Version 2.0.
+ * href=https://github.com/apache/druid/blob/master/extensions-contrib/influx-extensions/src/main/java/org/apache/druid/data/input/influx/InfluxParser.java>
+ * Apache Druid InfluxDB Parser </a>, licensed under the Apache License, Version 2.0.
  */
 @Internal
 public final class InfluxParser {
@@ -62,7 +62,7 @@ public final class InfluxParser {
                     "Multiple lines present; unable to parse more than one per record.", 0);
         }
 
-        final InfluxLineProtocolParser.LineContext line = lines.get(0);
+        final InfluxLineProtocolParser.LineContext line = lines.getFirst();
         final String measurement = parseIdentifier(line.identifier());
 
         final Long timestamp = parseTimestamp(line.timestamp());
