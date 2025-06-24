@@ -44,12 +44,12 @@ This module is compatible with InfluxDB 2.x and InfluxDB 1.8+. See more informat
 
 满足标准的数据源Source语义，现在的InfluxDBSource从InfluxDB读取数据，而不是原先的CDC模式，如果您需要使用bahir原先版本的数据接入逻辑，请使用bahir标准仓库main分支。
 
-现在的InfluxDBSource通过influxdb-client-java读取数据
+现在的InfluxDBSource通过influxdb-client-java分片读取时序数据数据
 
 ```mermaid
-graph LR
-    InfluxDBDataBase[InfluxDB Database] --> InfluxDBSource[InfluxDB Source]
-    InfluxDBSource --> FlinkOperator((Flink Operator))
+flowchart LR
+    InfluxDBDataBase["InfluxDB Database"] -- influxdb-client-java --> InfluxDBSource["InfluxDB Source"]
+    InfluxDBSource -- POJO --> FlinkOperator(("Flink Operator"))
 ```
 
 您可以参考[InfluxDBSourceDemo.java](./src/test/java/org/apache/flink/streaming/connectors/influxdb/source/InfluxDBSourceDemo.java)中的用例查看具体用法
