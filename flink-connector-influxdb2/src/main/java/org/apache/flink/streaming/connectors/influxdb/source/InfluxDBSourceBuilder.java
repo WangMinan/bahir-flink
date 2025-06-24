@@ -80,22 +80,26 @@ public final class InfluxDBSourceBuilder<OUT> {
 
     public InfluxDBSourceBuilder<OUT> setStartTime(final long startTime) {
         this.startTime = startTime;
+        this.configuration.set(InfluxDBSourceOptions.START_TIME, checkNotNull(startTime));
         return this;
     }
 
     public InfluxDBSourceBuilder<OUT> setEndTime(final long endTime) {
         this.stopTime = endTime;
+        this.configuration.set(InfluxDBSourceOptions.END_TIME, checkNotNull(endTime));
         return this;
     }
 
     public InfluxDBSourceBuilder<OUT> setSplitDuration(final long splitDuration) {
         this.splitDuration = splitDuration;
+        this.configuration.set(InfluxDBSourceOptions.SPLIT_DURATION, checkNotNull(splitDuration));
         return this;
     }
 
 
     public InfluxDBSourceBuilder<OUT> setMeasurementName(final String measurementName) {
         this.measurementName = measurementName;
+        this.configuration.set(InfluxDBSourceOptions.MEASUREMENT_NAME, checkNotNull(measurementName));
         return this;
     }
 
