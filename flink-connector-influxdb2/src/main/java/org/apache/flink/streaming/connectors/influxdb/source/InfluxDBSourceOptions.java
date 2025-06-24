@@ -17,8 +17,12 @@
  */
 package org.apache.flink.streaming.connectors.influxdb.source;
 
+import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.InfluxDBClientFactory;
+import com.influxdb.client.InfluxDBClientOptions;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
+import org.apache.flink.configuration.Configuration;
 
 /* Configurations for a InfluxDBSource. */
 public final class InfluxDBSourceOptions {
@@ -39,17 +43,60 @@ public final class InfluxDBSourceOptions {
                     .withDescription(
                             "Size of queue that buffers HTTP requests data points before fetching.");
 
-    public static final ConfigOption<Integer> MAXIMUM_LINES_PER_REQUEST =
-            ConfigOptions.key("source.influxDB.limit.lines_per_request")
-                    .intType()
-                    .defaultValue(1000)
-                    .withDescription(
-                            "The maximum number of lines that should be parsed per HTTP request.");
+    public static final ConfigOption<String> INFLUXDB_URL =
+            ConfigOptions.key("sink.influxDB.client.URL")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB Connection URL.");
 
-    public static final ConfigOption<Integer> PORT =
-            ConfigOptions.key("source.influxDB.port")
-                    .intType()
-                    .defaultValue(8000)
-                    .withDescription(
-                            "TCP port on which the split reader's HTTP server is running on.");
+    public static final ConfigOption<String> INFLUXDB_USERNAME =
+            ConfigOptions.key("sink.influxDB.client.username")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB username.");
+
+    public static final ConfigOption<String> INFLUXDB_PASSWORD =
+            ConfigOptions.key("sink.influxDB.client.password")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB password.");
+
+    public static final ConfigOption<String> INFLUXDB_TOKEN =
+            ConfigOptions.key("sink.influxDB.client.token")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB access token.");
+
+    public static final ConfigOption<String> INFLUXDB_BUCKET =
+            ConfigOptions.key("sink.influxDB.client.bucket")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB bucket name.");
+
+    public static final ConfigOption<String> INFLUXDB_ORGANIZATION =
+            ConfigOptions.key("sink.influxDB.client.organization")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB organization name.");
+
+    public static InfluxDBClient getInfluxDBClient(final Configuration configuration) {
+        final String url = configuration.get(INFLUXDB_URL);
+        final String username = configuration.get(INFLUXDB_USERNAME);
+        final String password = configuration.get(INFLUXDB_PASSWORD);
+        final String token = configuration.get(INFLUXDB_TOKEN);
+        final String bucket = configuration.get(INFLUXDB_BUCKET);
+        final String organization = configuration.get(INFLUXDB_ORGANIZATION);
+        InfluxDBClientOptions.Builder builder = InfluxDBClientOptions.builder();
+        builder = builder
+                .url(url)
+                .bucket(bucket)
+                .org(organization);
+        if (token != null) {
+            builder = builder.authenticateToken(token.toCharArray());
+        } else if (username != null && password != null) {
+            builder = builder.authenticate(username, password.toCharArray());
+        }
+        final InfluxDBClientOptions influxDBClientOptions = builder.build();
+        return InfluxDBClientFactory.create(influxDBClientOptions);
+    }
 }

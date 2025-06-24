@@ -21,7 +21,15 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.connectors.influxdb.sink2.writer.InfluxDBSchemaSerializer;
 import org.apache.flink.streaming.connectors.influxdb.sink2.writer.InfluxDBWriter;
 
-import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.*;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.BATCH_INTERVAL_MS;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_BUCKET;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_ORGANIZATION;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_PASSWORD;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_TOKEN;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_URL;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_USERNAME;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.WRITE_BUFFER_SIZE;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.WRITE_DATA_POINT_CHECKPOINT;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 

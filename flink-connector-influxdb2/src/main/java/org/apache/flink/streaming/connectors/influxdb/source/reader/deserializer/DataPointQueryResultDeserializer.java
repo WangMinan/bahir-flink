@@ -15,30 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.flink.streaming.connectors.influxdb.source.enumerator;
+package org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer;
 
-import org.apache.flink.annotation.Internal;
-import org.apache.flink.streaming.connectors.influxdb.source.split.InfluxDBSplit;
+import com.influxdb.query.InfluxQLQueryResult;
+import org.apache.flink.streaming.connectors.influxdb.common.DataPoint;
 
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.List;
 
-/**
- * The state of InfluxDB source enumerator.
- */
-@Internal
-public class InfluxDBSourceEnumState {
-    private final List<InfluxDBSplit> unassignedSplits;
+/** An interface for the deserialization of InfluxDB data points. */
+public interface DataPointQueryResultDeserializer extends Serializable {
 
-    public InfluxDBSourceEnumState() {
-        this.unassignedSplits = new ArrayList<>();
-    }
-
-    public InfluxDBSourceEnumState(List<InfluxDBSplit> unassignedSplits) {
-        this.unassignedSplits = unassignedSplits;
-    }
-
-    public List<InfluxDBSplit> getUnassignedSplits() {
-        return unassignedSplits;
-    }
+    List<DataPoint> deserialize(InfluxQLQueryResult queryResult);
 }

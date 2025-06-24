@@ -4,12 +4,12 @@
  * distributed with this work for additional information
  * regarding copyright ownership. The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
+ * "License"); you may not use this file except OUT compliance
  * with the License. You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * Unless required by applicable law or agreed to OUT writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -18,8 +18,19 @@
 package org.apache.flink.streaming.connectors.influxdb.source;
 
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.DataPointQueryResultDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBDataPointDeserializer;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_BUCKET;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_ORGANIZATION;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_PASSWORD;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_TOKEN;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_URL;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_USERNAME;
+import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
@@ -29,14 +40,6 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * <p>The following example shows the minimum setup to create a InfluxDBSource that reads the Long
  * values from a line protocol source.
  *
- * <pre>{@code
- * InfluxDBSource<Long> influxDBSource = InfluxBSource.builder()
- * .setDeserializer(new InfluxDBDeserializer())
- * .build()
- * }</pre>
- *
- * <p>To specify the starting port on which the InfluxDBSource starts its HTTP server, one can call
- * {@link #setPort(int)}.
  *
  * <p>Check the Java docs of each individual methods to learn more about the settings to build a
  * InfluxDBSource.
@@ -45,10 +48,139 @@ public final class InfluxDBSourceBuilder<OUT> {
 
     private InfluxDBDataPointDeserializer<OUT> deserializationSchema;
     private final Configuration configuration;
+    private List<String> whereCondition;
+    private String influxDBUrl;
+    private String influxDBUsername;
+    private String influxDBPassword;
+    private String influxDBToken;
+    private String bucketName;
+    private String organizationName;
+    private String measurementName;
+    private long startTime;
+    private long stopTime;
+    private long splitDuration;
+    private DataPointQueryResultDeserializer queryResultDeserializer;
 
     InfluxDBSourceBuilder() {
+        this.influxDBUrl = null;
+        this.influxDBUsername = null;
+        this.influxDBPassword = null;
+        this.influxDBToken = null;
+        this.bucketName = null;
         this.deserializationSchema = null;
+        this.organizationName = null;
+        this.whereCondition = new ArrayList<>();
+        this.measurementName = null;
         this.configuration = new Configuration();
+        this.startTime = 0L; // Default start time
+        this.stopTime = Long.MAX_VALUE; // Default end time
+        this.splitDuration = 60 * 60 * 1_000_000_000L; // Default split duration (1 hour in nanoseconds)
+        this.queryResultDeserializer = null; // Default deserializer
+    }
+
+    public InfluxDBSourceBuilder<OUT> setStartTime(final long startTime) {
+        this.startTime = startTime;
+        return this;
+    }
+
+    public InfluxDBSourceBuilder<OUT> setEndTime(final long endTime) {
+        this.stopTime = endTime;
+        return this;
+    }
+
+    public InfluxDBSourceBuilder<OUT> setSplitDuration(final long splitDuration) {
+        this.splitDuration = splitDuration;
+        return this;
+    }
+
+
+    public InfluxDBSourceBuilder<OUT> setMeasurementName(final String measurementName) {
+        this.measurementName = measurementName;
+        return this;
+    }
+
+
+    /**
+     * Sets the query Flux to use for this InfluxDBSource.
+     *
+     * @param whereCondition the query Flux to use for this InfluxDBSource.
+     * @return this InfluxDBSourceBuilder.
+     */
+    public InfluxDBSourceBuilder<OUT> setWhereCondition(List<String> whereCondition) {
+        this.whereCondition = whereCondition;
+        return this;
+    }
+
+    /**
+     * Sets the InfluxDB url.
+     *
+     * @param influxDBUrl the url of the InfluxDB instance to send data to.
+     * @return this InfluxDBSourceBuilder.
+     */
+    public InfluxDBSourceBuilder<OUT> setInfluxDBUrl(final String influxDBUrl) {
+        this.influxDBUrl = influxDBUrl;
+        this.configuration.set(INFLUXDB_URL, checkNotNull(influxDBUrl));
+        return this;
+    }
+
+    /**
+     * Sets the InfluxDB user name.
+     *
+     * @param influxDBUsername the user name of the InfluxDB instance.
+     * @return this InfluxDBSourceBuilder.
+     */
+    public InfluxDBSourceBuilder<OUT> setInfluxDBUsername(final String influxDBUsername) {
+        this.influxDBUsername = influxDBUsername;
+        this.configuration.set(INFLUXDB_USERNAME, checkNotNull(influxDBUsername));
+        return this;
+    }
+
+    /**
+     * Sets the InfluxDB password.
+     *
+     * @param influxDBPassword the password of the InfluxDB instance.
+     * @return this InfluxDBSourceBuilder.
+     */
+    public InfluxDBSourceBuilder<OUT> setInfluxDBPassword(final String influxDBPassword) {
+        this.influxDBPassword = influxDBPassword;
+        this.configuration.set(INFLUXDB_PASSWORD, checkNotNull(influxDBPassword));
+        return this;
+    }
+
+    /**
+     * Sets the InfluxDB token.
+     *
+     * @param influxDBToken the token of the InfluxDB instance.
+     * @return this InfluxDBSourceBuilder.
+     */
+    public InfluxDBSourceBuilder<OUT> setInfluxDBToken(final String influxDBToken) {
+        this.influxDBToken = influxDBToken;
+        this.configuration.set(INFLUXDB_TOKEN, checkNotNull(influxDBToken));
+        return this;
+    }
+
+    /**
+     * Sets the InfluxDB bucket name.
+     *
+     * @param bucketName the bucket name of the InfluxDB instance to store the data OUT.
+     * @return this InfluxDBSourceBuilder.
+     */
+    public InfluxDBSourceBuilder<OUT> setInfluxDBBucket(final String bucketName) {
+        this.bucketName = bucketName;
+        this.configuration.set(INFLUXDB_BUCKET, checkNotNull(bucketName));
+        return this;
+    }
+
+    /**
+     * Sets the InfluxDB organization name.
+     *
+     * @param organizationName the organization name of the InfluxDB instance.
+     * @return this InfluxDBSourceBuilder.
+     */
+    public InfluxDBSourceBuilder<OUT> setInfluxDBOrganization(final String organizationName) {
+        this.organizationName = organizationName;
+        this.configuration.set(INFLUXDB_ORGANIZATION, checkNotNull(organizationName));
+        return this;
     }
 
     /**
@@ -57,10 +189,10 @@ public final class InfluxDBSourceBuilder<OUT> {
      * InfluxDBSource.
      *
      * @param dataPointDeserializer the deserializer for InfluxDB {@link
-     *     org.apache.flink.streaming.connectors.influxdb.common.DataPoint DataPoint}.
+     *                              org.apache.flink.streaming.connectors.influxdb.common.DataPoint DataPoint}.
      * @return this InfluxDBSourceBuilder.
      */
-    public <T extends OUT> InfluxDBSourceBuilder<T> setDeserializer(
+    public <T extends OUT> InfluxDBSourceBuilder<T> setDataPointDeserializer(
             final InfluxDBDataPointDeserializer<T> dataPointDeserializer) {
         checkNotNull(dataPointDeserializer);
         final InfluxDBSourceBuilder<T> sourceBuilder = (InfluxDBSourceBuilder<T>) this;
@@ -75,7 +207,7 @@ public final class InfluxDBSourceBuilder<OUT> {
      * @return this InfluxDBSourceBuilder.
      */
     public InfluxDBSourceBuilder<OUT> setEnqueueWaitTime(final long timeOut) {
-        this.configuration.setLong(InfluxDBSourceOptions.ENQUEUE_WAIT_TIME, timeOut);
+        this.configuration.set(InfluxDBSourceOptions.ENQUEUE_WAIT_TIME, timeOut);
         return this;
     }
 
@@ -86,31 +218,19 @@ public final class InfluxDBSourceBuilder<OUT> {
      * @return this InfluxDBSourceBuilder.
      */
     public InfluxDBSourceBuilder<OUT> setIngestQueueCapacity(final int capacity) {
-        this.configuration.setInteger(InfluxDBSourceOptions.INGEST_QUEUE_CAPACITY, capacity);
+        this.configuration.set(InfluxDBSourceOptions.INGEST_QUEUE_CAPACITY, capacity);
         return this;
     }
 
     /**
-     * Sets the maximum number of lines that should be parsed per HTTP request for this
-     * InfluxDBSource.
+     * Sets the query result deserializer for the InfluxDBSource.
      *
-     * @param max the maximum number of lines to use for this InfluxDBSource.
+     * @param queryResultDeserializer the deserializer to use for this InfluxDBSource.
      * @return this InfluxDBSourceBuilder.
      */
-    public InfluxDBSourceBuilder<OUT> setMaximumLinesPerRequest(final int max) {
-        this.configuration.setInteger(InfluxDBSourceOptions.MAXIMUM_LINES_PER_REQUEST, max);
-        return this;
-    }
-
-    /**
-     * Sets the TCP port on which the split reader's HTTP server of this InfluxDBSource is running
-     * on.
-     *
-     * @param port the port to use for this InfluxDBSource.
-     * @return this InfluxDBSourceBuilder.
-     */
-    public InfluxDBSourceBuilder<OUT> setPort(final int port) {
-        this.configuration.setInteger(InfluxDBSourceOptions.PORT, port);
+    public InfluxDBSourceBuilder<OUT> setQueryResultDeserializer(
+            final DataPointQueryResultDeserializer queryResultDeserializer) {
+        this.queryResultDeserializer = queryResultDeserializer;
         return this;
     }
 
@@ -121,7 +241,9 @@ public final class InfluxDBSourceBuilder<OUT> {
      */
     public InfluxDBSource<OUT> build() {
         this.sanityCheck();
-        return new InfluxDBSource<>(this.configuration, this.deserializationSchema);
+        return new InfluxDBSource<>(configuration, deserializationSchema, bucketName,
+                whereCondition, measurementName, startTime, stopTime, splitDuration,
+                queryResultDeserializer);
     }
 
     // ------------- private helpers  --------------
@@ -129,5 +251,22 @@ public final class InfluxDBSourceBuilder<OUT> {
     private void sanityCheck() {
         checkNotNull(
                 this.deserializationSchema, "Deserialization schema is required but not provided.");
+        // check that either username/password or token is provided for authentication
+        checkArgument(
+                this.influxDBToken != null
+                        || (this.influxDBUsername != null && this.influxDBPassword != null),
+                "Either the InfluxDB username and password or InfluxDB token are required but neither provided"
+        );
+        // check that both username/password and token are not both provided for authentication
+        checkArgument(
+                !(this.influxDBToken != null
+                        && (this.influxDBUsername != null || this.influxDBPassword != null)),
+                "Either the InfluxDB username and password or InfluxDB token are required but both provided"
+        );
+        checkNotNull(this.bucketName, "The Bucket name is required but not provided.");
+        checkNotNull(this.organizationName, "The Organization name is required but not provided.");
+        checkNotNull(
+                this.influxDBUrl, "The InfluxDB URL is required but not provided.");
+        checkNotNull(this.whereCondition, "The where condition is required but not provided.");
     }
 }
