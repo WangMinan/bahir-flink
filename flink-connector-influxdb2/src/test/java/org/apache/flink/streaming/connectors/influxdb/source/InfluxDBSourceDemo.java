@@ -32,7 +32,7 @@ import java.util.Objects;
 
 /**
  * @author : [wangminan]
- * @description : [一句话描述该类的功能]
+ * @description : [InfluxDBSourceDemo]
  */
 public class InfluxDBSourceDemo {
 
