@@ -33,8 +33,8 @@ import org.apache.flink.streaming.connectors.influxdb.source.enumerator.InfluxDB
 import org.apache.flink.streaming.connectors.influxdb.source.reader.InfluxDBRecordEmitter;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.InfluxDBSourceReader;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.InfluxDBSplitReader;
-import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.DataPointQueryResultDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBDataPointDeserializer;
+import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBQueryResultDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.split.InfluxDBSplit;
 import org.apache.flink.streaming.connectors.influxdb.source.split.InfluxDBSplitSerializer;
 
@@ -68,7 +68,7 @@ public final class InfluxDBSource<OUT>
     private final long endTime;
     private final long splitDuration;
     private final Boundedness boundedness;
-    private final DataPointQueryResultDeserializer queryResultDeserializer;
+    private final InfluxDBQueryResultDeserializer queryResultDeserializer;
 
 
     InfluxDBSource(
@@ -80,7 +80,7 @@ public final class InfluxDBSource<OUT>
             long startTime,
             long endTime,
             long splitDuration,
-            DataPointQueryResultDeserializer queryResultDeserializer) {
+            InfluxDBQueryResultDeserializer queryResultDeserializer) {
         this.configuration = configuration;
         this.deserializationSchema = deserializationSchema;
         this.bucket = bucket;
@@ -109,7 +109,7 @@ public final class InfluxDBSource<OUT>
         final Supplier<InfluxDBSplitReader> splitReaderSupplier =
                 () -> new InfluxDBSplitReader(configuration, whereCondition, queryResultDeserializer);
         final InfluxDBRecordEmitter<OUT> recordEmitter =
-                new InfluxDBRecordEmitter<>(this.deserializationSchema);
+                new InfluxDBRecordEmitter<>();
 
         return new InfluxDBSourceReader<>(
                 splitReaderSupplier, recordEmitter, this.configuration, sourceReaderContext);

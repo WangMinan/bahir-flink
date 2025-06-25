@@ -21,7 +21,7 @@ import com.influxdb.query.InfluxQLQueryResult;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.influxdb.common.DataPoint;
-import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.DataPointQueryResultDeserializer;
+import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBQueryResultDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBDataPointDeserializer;
 
 import java.io.IOException;
@@ -63,7 +63,7 @@ public class InfluxDBSourceDemo {
                 .setWhereCondition(List.of())
                 // 设置 influxdb query 返回值的解析器 在连接器框架下 该解析器将数据转换为 datapoint 响应对象
                 .setQueryResultDeserializer(
-                        (DataPointQueryResultDeserializer) queryResult -> {
+                        (InfluxDBQueryResultDeserializer) queryResult -> {
                             List<DataPoint> dataPoints = new ArrayList<>();
                             for (InfluxQLQueryResult.Result resultResult : queryResult.getResults()) {
                                 for (InfluxQLQueryResult.Series series : resultResult.getSeries()) {

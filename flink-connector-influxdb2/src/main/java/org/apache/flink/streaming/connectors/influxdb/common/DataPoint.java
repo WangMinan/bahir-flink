@@ -143,12 +143,11 @@ public final class DataPoint {
 
         /* Check if o is an instance of Complex or not
         "null instanceof [type]" also returns false */
-        if (!(obj instanceof DataPoint)) {
+        if (!(obj instanceof DataPoint point)) {
             return false;
         }
 
         // typecast o to DataPoint so that we can compare data members
-        final DataPoint point = (DataPoint) obj;
 
         return point.measurement.equals(this.measurement)
                 && point.tags.equals(this.tags)

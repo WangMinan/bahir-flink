@@ -75,6 +75,7 @@ public final class InfluxDBSplit implements SourceSplit, Serializable {
     public void setEndTime(long endTime) {
         this.endTime = endTime;
     }
+
     public long getSplitDuration() {
         return splitDuration;
     }
