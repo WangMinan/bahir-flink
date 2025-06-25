@@ -79,7 +79,7 @@ InfluxDBSource<Long> influxDBSource = InfluxBSource.builder()
 // ...
 
 /**
- * Implementation of InfluxDBDataPointDeserializer interface
+ * Implementation of InfluxDBQueryResultDeserializer interface
  * (dataPoint) -----> (element)
  *  test,longValue=1 fieldKey="fieldValue" -----------> 1L
  *  test,longValue=2 fieldKey="fieldValue" -----------> 2L
