@@ -27,6 +27,7 @@ import java.io.OutputStream;
 
 /** Abstract base handle class for creating a response */
 @Internal
+@Deprecated
 abstract class Handler implements HttpHandler {
 
     static final int HTTP_TOO_MANY_REQUESTS = 415;

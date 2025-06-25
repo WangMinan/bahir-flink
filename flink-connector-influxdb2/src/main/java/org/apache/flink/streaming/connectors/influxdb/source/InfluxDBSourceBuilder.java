@@ -17,6 +17,7 @@
  */
 package org.apache.flink.streaming.connectors.influxdb.source;
 
+import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.DataPointQueryResultDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBDataPointDeserializer;
@@ -60,6 +61,7 @@ public final class InfluxDBSourceBuilder<OUT> {
     private long stopTime;
     private long splitDuration;
     private DataPointQueryResultDeserializer queryResultDeserializer;
+    private Boundedness boundedness;
 
     InfluxDBSourceBuilder() {
         this.influxDBUrl = null;
@@ -76,6 +78,7 @@ public final class InfluxDBSourceBuilder<OUT> {
         this.stopTime = Long.MAX_VALUE; // Default end time
         this.splitDuration = 60 * 60 * 1_000_000_000L; // Default split duration (1 hour in nanoseconds)
         this.queryResultDeserializer = null; // Default deserializer
+        this.boundedness = Boundedness.BOUNDED; // Default boundedness
     }
 
     public InfluxDBSourceBuilder<OUT> setStartTime(final long startTime) {
@@ -238,6 +241,11 @@ public final class InfluxDBSourceBuilder<OUT> {
         return this;
     }
 
+    public InfluxDBSourceBuilder<OUT> setBoundedness(final Boundedness boundedness) {
+        this.boundedness = boundedness;
+        return this;
+    }
+
     /**
      * Build the {@link InfluxDBSource}.
      *
@@ -247,7 +255,7 @@ public final class InfluxDBSourceBuilder<OUT> {
         this.sanityCheck();
         return new InfluxDBSource<>(configuration, deserializationSchema, bucketName,
                 whereCondition, measurementName, startTime, stopTime, splitDuration,
-                queryResultDeserializer);
+                queryResultDeserializer, boundedness);
     }
 
     // ------------- private helpers  --------------
@@ -255,12 +263,6 @@ public final class InfluxDBSourceBuilder<OUT> {
     private void sanityCheck() {
         checkNotNull(
                 this.deserializationSchema, "Deserialization schema is required but not provided.");
-        // check that either username/password or token is provided for authentication
-        checkArgument(
-                this.influxDBToken != null
-                        || (this.influxDBUsername != null && this.influxDBPassword != null),
-                "Either the InfluxDB username and password or InfluxDB token are required but neither provided"
-        );
         // check that both username/password and token are not both provided for authentication
         checkArgument(
                 !(this.influxDBToken != null
@@ -272,5 +274,40 @@ public final class InfluxDBSourceBuilder<OUT> {
         checkNotNull(
                 this.influxDBUrl, "The InfluxDB URL is required but not provided.");
         checkNotNull(this.whereCondition, "The where condition is required but not provided.");
+        checkArgument(
+                this.startTime < this.stopTime,
+                "The start time must be less than the stop time. Provided start time: "
+                        + this.startTime
+                        + ", stop time: "
+                        + this.stopTime);
+        checkArgument(
+                this.splitDuration > 0,
+                "The split duration must be greater than 0. Provided split duration: "
+                        + this.splitDuration);
+        checkArgument(
+                this.startTime >= 0,
+                "The start time must be greater than or equal to 0. Provided start time: "
+                        + this.startTime);
+        checkArgument(
+                this.boundedness == Boundedness.BOUNDED || this.boundedness == Boundedness.CONTINUOUS_UNBOUNDED,
+                "The boundedness must be either BOUNDED or CONTINUOUS_UNBOUNDED. Provided boundedness: "
+                        + this.boundedness);
+        checkNotNull(
+                this.queryResultDeserializer,
+                "The query result deserializer is required but not provided.");
+        checkNotNull(
+                this.measurementName, "The measurement name is required but not provided.");
+        checkNotNull(
+                this.influxDBUrl, "The InfluxDB URL is required but not provided.");
+        checkNotNull(
+                this.influxDBUsername, "The InfluxDB username is required but not provided.");
+        checkNotNull(
+                this.influxDBPassword, "The InfluxDB password is required but not provided.");
+        checkNotNull(
+                this.bucketName, "The InfluxDB bucket name is required but not provided.");
+        checkNotNull(
+                this.organizationName,
+                "The InfluxDB organization name is required but not provided.");
+
     }
 }

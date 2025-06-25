@@ -17,6 +17,7 @@
  */
 package org.apache.flink.streaming.connectors.influxdb.source.enumerator;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
@@ -36,6 +37,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /**
  * The enumerator class for InfluxDB source.
  */
+@Internal
 public class InfluxDBSplitEnumerator implements SplitEnumerator<InfluxDBSplit, InfluxDBSourceEnumState> {
     private static final Logger LOG = LoggerFactory.getLogger(InfluxDBSplitEnumerator.class);
 

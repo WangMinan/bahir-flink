@@ -28,6 +28,7 @@ import java.net.HttpURLConnection;
  * code 200 is sent
  */
 @Internal
+@Deprecated
 public final class HealthCheckHandler extends Handler {
 
     @Override

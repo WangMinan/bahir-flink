@@ -80,7 +80,8 @@ public final class InfluxDBSource<OUT>
             long startTime,
             long endTime,
             long splitDuration,
-            DataPointQueryResultDeserializer queryResultDeserializer) {
+            DataPointQueryResultDeserializer queryResultDeserializer,
+            Boundedness boundedness) {
         this.configuration = configuration;
         this.deserializationSchema = deserializationSchema;
         this.bucket = bucket;
@@ -91,7 +92,7 @@ public final class InfluxDBSource<OUT>
         this.splitDuration = splitDuration;
         this.queryResultDeserializer = queryResultDeserializer;
         // 我们在这里用一个常量
-        this.boundedness = Boundedness.BOUNDED;
+        this.boundedness = boundedness;
     }
 
     // builder
