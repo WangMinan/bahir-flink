@@ -121,6 +121,10 @@ public final class DataPoint {
         return this.timestamp;
     }
 
+    public String getMeasurement() {
+        return this.measurement;
+    }
+
     /**
      * A point is uniquely identified by the measurement name, tag set, and timestamp. If you submit
      * line protocol with the same measurement, tag set, and timestamp, but with a different field
