@@ -21,16 +21,23 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.connector.source.SourceOutput;
 import org.apache.flink.connector.base.source.reader.RecordEmitter;
 import org.apache.flink.streaming.connectors.influxdb.common.DataPoint;
+import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBDataPointDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.split.InfluxDBSplit;
 
+import java.io.IOException;
+
 @Internal
-public final class InfluxDBRecordEmitter<T> implements RecordEmitter<DataPoint, DataPoint, InfluxDBSplit> {
+public final class InfluxDBRecordEmitter<T> implements RecordEmitter<DataPoint, T, InfluxDBSplit> {
+    private final InfluxDBDataPointDeserializer<T> dataPointDeserializer;
+
+    public InfluxDBRecordEmitter(final InfluxDBDataPointDeserializer<T> dataPointDeserializer) {
+        this.dataPointDeserializer = dataPointDeserializer;
+    }
 
     @Override
     public void emitRecord(
-            final DataPoint element, final SourceOutput<DataPoint> output, final InfluxDBSplit splitState) {
-        output.collect(element,
-                // 纳秒
-                element.getTimestamp() == null ? System.currentTimeMillis() * 1000 : element.getTimestamp());
+            final DataPoint element, final SourceOutput<T> output, final InfluxDBSplit splitState)
+            throws IOException {
+        output.collect(this.dataPointDeserializer.deserialize(element), element.getTimestamp());
     }
 }

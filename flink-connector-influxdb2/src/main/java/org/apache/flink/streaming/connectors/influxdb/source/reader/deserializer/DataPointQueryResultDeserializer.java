@@ -24,7 +24,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /** An interface for the deserialization of InfluxDB data points. */
-public interface InfluxDBQueryResultDeserializer extends Serializable {
+public interface DataPointQueryResultDeserializer extends Serializable {
 
     List<DataPoint> deserialize(InfluxQLQueryResult queryResult);
 }

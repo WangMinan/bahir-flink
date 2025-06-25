@@ -29,7 +29,7 @@ import org.apache.flink.connector.base.source.reader.splitreader.SplitReader;
 import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.connector.base.source.reader.synchronization.FutureCompletingBlockingQueue;
 import org.apache.flink.streaming.connectors.influxdb.common.DataPoint;
-import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBQueryResultDeserializer;
+import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.DataPointQueryResultDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.split.InfluxDBSplit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public final class InfluxDBSplitReader implements SplitReader<DataPoint, InfluxD
 
     private final InfluxDBClient influxDBClient;
     private final List<String> whereCondition; // 基础查询模板
-    private final InfluxDBQueryResultDeserializer queryResultDeserializer;
+    private final DataPointQueryResultDeserializer queryResultDeserializer;
     private int emptyQueryCount = 0;
     private static final int MAX_EMPTY_QUERY_ATTEMPTS = 3;
 
@@ -66,7 +66,7 @@ public final class InfluxDBSplitReader implements SplitReader<DataPoint, InfluxD
     private InfluxDBSplit split;
 
     public InfluxDBSplitReader(final Configuration configuration, List<String> whereCondition,
-                               InfluxDBQueryResultDeserializer queryResultDeserializer) {
+                               DataPointQueryResultDeserializer queryResultDeserializer) {
         final int capacity = configuration.get(INGEST_QUEUE_CAPACITY);
         this.ingestionQueue = new FutureCompletingBlockingQueue<>(capacity);
         this.influxDBClient = getInfluxDBClient(configuration);

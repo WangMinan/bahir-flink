@@ -18,8 +18,8 @@
 package org.apache.flink.streaming.connectors.influxdb.source;
 
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.DataPointQueryResultDeserializer;
 import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBDataPointDeserializer;
-import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer.InfluxDBQueryResultDeserializer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,24 +46,20 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  */
 public final class InfluxDBSourceBuilder<OUT> {
 
+    private InfluxDBDataPointDeserializer<OUT> deserializationSchema;
     private final Configuration configuration;
-    // -- 构造 InfluxDBClient 的条件
+    private List<String> whereCondition;
     private String influxDBUrl;
     private String influxDBUsername;
     private String influxDBPassword;
     private String influxDBToken;
     private String bucketName;
     private String organizationName;
-    // -- 查询条件
     private String measurementName;
-    private List<String> whereCondition;
-    // -- 分片依据 时间和单个分片的大小
     private long startTime;
     private long stopTime;
     private long splitDuration;
-    // -- 两个反序列化器 分别将 InfluxDBQueryResult反序列化为DataPoint 以及将 DataPoint 转换为实体类
-    private InfluxDBQueryResultDeserializer queryResultDeserializer;
-    private InfluxDBDataPointDeserializer<OUT> deserializationSchema;
+    private DataPointQueryResultDeserializer queryResultDeserializer;
 
     InfluxDBSourceBuilder() {
         this.influxDBUrl = null;
@@ -237,7 +233,7 @@ public final class InfluxDBSourceBuilder<OUT> {
      * @return this InfluxDBSourceBuilder.
      */
     public InfluxDBSourceBuilder<OUT> setQueryResultDeserializer(
-            final InfluxDBQueryResultDeserializer queryResultDeserializer) {
+            final DataPointQueryResultDeserializer queryResultDeserializer) {
         this.queryResultDeserializer = queryResultDeserializer;
         return this;
     }

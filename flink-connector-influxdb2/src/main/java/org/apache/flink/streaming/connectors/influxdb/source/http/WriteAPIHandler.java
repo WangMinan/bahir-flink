@@ -44,7 +44,6 @@ import java.util.concurrent.TimeoutException;
  * objects.
  */
 @Internal
-@Deprecated
 public final class WriteAPIHandler extends Handler {
     private static final Logger LOG = LoggerFactory.getLogger(WriteAPIHandler.class);
 
