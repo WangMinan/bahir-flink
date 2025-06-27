@@ -63,10 +63,10 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
             final InfluxDBSchemaSerializer<IN> schemaSerializer,
             final Configuration configuration) {
         this.schemaSerializer = schemaSerializer;
-        this.bufferSize = configuration.getInteger(WRITE_BUFFER_SIZE);
-        long batchIntervalMs = configuration.getLong(BATCH_INTERVAL_MS);
+        this.bufferSize = configuration.get(WRITE_BUFFER_SIZE);
+        long batchIntervalMs = configuration.get(BATCH_INTERVAL_MS);
         this.elements = new ArrayList<>(this.bufferSize);
-        this.writeCheckpoint = configuration.getBoolean(WRITE_DATA_POINT_CHECKPOINT);
+        this.writeCheckpoint = configuration.get(WRITE_DATA_POINT_CHECKPOINT);
         this.influxDBClient = getInfluxDBClient(configuration);
 
         // 初始化定时线程池
