@@ -300,10 +300,6 @@ public final class InfluxDBSourceBuilder<OUT> {
         checkNotNull(
                 this.influxDBUrl, "The InfluxDB URL is required but not provided.");
         checkNotNull(
-                this.influxDBUsername, "The InfluxDB username is required but not provided.");
-        checkNotNull(
-                this.influxDBPassword, "The InfluxDB password is required but not provided.");
-        checkNotNull(
                 this.bucketName, "The InfluxDB bucket name is required but not provided.");
         checkNotNull(
                 this.organizationName,
