@@ -27,6 +27,7 @@ import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
+import org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions;
 import org.apache.flink.streaming.connectors.influxdb.source.enumerator.InfluxDBSourceEnumState;
 import org.apache.flink.streaming.connectors.influxdb.source.enumerator.InfluxDBSourceEnumStateSerializer;
 import org.apache.flink.streaming.connectors.influxdb.source.enumerator.InfluxDBSplitEnumerator;
@@ -70,6 +71,11 @@ public final class InfluxDBSource<OUT>
     private final Boundedness boundedness;
     private final DataPointQueryResultDeserializer queryResultDeserializer;
 
+    //第 1 处修改：
+    private final String influxDBUrl;
+    private final String influxDBToken;
+    private final String influxDBOrganization;
+
 
     InfluxDBSource(
             Configuration configuration,
@@ -93,6 +99,11 @@ public final class InfluxDBSource<OUT>
         this.queryResultDeserializer = queryResultDeserializer;
         // 我们在这里用一个常量
         this.boundedness = boundedness;
+         //  第 2 处修改：
+            // 从 configuration 对象中读取配置
+        this.influxDBUrl = configuration.getString(InfluxDBSinkOptions.INFLUXDB_URL, null);
+        this.influxDBToken = configuration.getString(InfluxDBSinkOptions.INFLUXDB_TOKEN, null);
+        this.influxDBOrganization = configuration.getString(InfluxDBSinkOptions.INFLUXDB_ORGANIZATION, null);
     }
 
     // builder
@@ -107,8 +118,10 @@ public final class InfluxDBSource<OUT>
 
     @Override
     public SourceReader<OUT, InfluxDBSplit> createReader(SourceReaderContext sourceReaderContext) {
+        // 第 3 处修改：修改这一行
         final Supplier<InfluxDBSplitReader> splitReaderSupplier =
-                () -> new InfluxDBSplitReader(configuration, whereCondition, queryResultDeserializer);
+                () -> new InfluxDBSplitReader(configuration, whereCondition, queryResultDeserializer, influxDBUrl, influxDBToken, influxDBOrganization);
+
         final InfluxDBRecordEmitter<OUT> recordEmitter =
                 new InfluxDBRecordEmitter<>(this.deserializationSchema);
 

@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.connectors.influxdb.source.reader;
 
 import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.InfluxDBClientFactory;
 import com.influxdb.client.InfluxQLQueryApi;
 import com.influxdb.client.domain.InfluxQLQuery;
 import com.influxdb.query.InfluxQLQueryResult;
@@ -43,7 +44,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INGEST_QUEUE_CAPACITY;
-import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.getInfluxDBClient;
+
 
 /**
  * A {@link SplitReader} implementation that reads records from InfluxDB splits.
@@ -65,11 +66,15 @@ public final class InfluxDBSplitReader implements SplitReader<DataPoint, InfluxD
     private final FutureCompletingBlockingQueue<List<DataPoint>> ingestionQueue;
     private InfluxDBSplit split;
 
+    // ▼▼▼▼▼ 第 2 处修改：修改整个构造函数 ▼▼▼▼▼
     public InfluxDBSplitReader(final Configuration configuration, List<String> whereCondition,
-                               DataPointQueryResultDeserializer queryResultDeserializer) {
+                               DataPointQueryResultDeserializer queryResultDeserializer, String url, String token, String org) {
         final int capacity = configuration.get(INGEST_QUEUE_CAPACITY);
         this.ingestionQueue = new FutureCompletingBlockingQueue<>(capacity);
-        this.influxDBClient = getInfluxDBClient(configuration);
+
+        // 直接使用传入的参数构建客户端，不再依赖 getInfluxDBClient
+        this.influxDBClient = InfluxDBClientFactory.create(url, token.toCharArray(), org);
+
         this.whereCondition = whereCondition;
         this.queryResultDeserializer = queryResultDeserializer;
     }
