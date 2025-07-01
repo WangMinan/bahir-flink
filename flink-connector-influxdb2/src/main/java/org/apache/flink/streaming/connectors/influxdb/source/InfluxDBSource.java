@@ -97,13 +97,10 @@ public final class InfluxDBSource<OUT>
         this.endTime = endTime;
         this.splitDuration = splitDuration;
         this.queryResultDeserializer = queryResultDeserializer;
-        // 我们在这里用一个常量
         this.boundedness = boundedness;
-         //  第 2 处修改：
-            // 从 configuration 对象中读取配置
-        this.influxDBUrl = configuration.getString(InfluxDBSinkOptions.INFLUXDB_URL, null);
-        this.influxDBToken = configuration.getString(InfluxDBSinkOptions.INFLUXDB_TOKEN, null);
-        this.influxDBOrganization = configuration.getString(InfluxDBSinkOptions.INFLUXDB_ORGANIZATION, null);
+        this.influxDBUrl = configuration.get(InfluxDBSinkOptions.INFLUXDB_URL, null);
+        this.influxDBToken = configuration.get(InfluxDBSinkOptions.INFLUXDB_TOKEN, null);
+        this.influxDBOrganization = configuration.get(InfluxDBSinkOptions.INFLUXDB_ORGANIZATION, null);
     }
 
     // builder

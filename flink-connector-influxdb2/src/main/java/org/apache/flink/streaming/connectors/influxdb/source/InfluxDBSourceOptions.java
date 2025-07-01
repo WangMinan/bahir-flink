@@ -70,7 +70,6 @@ public final class InfluxDBSourceOptions {
                     .withDescription(
                             "Size of queue that buffers HTTP requests data points before fetching.");
 
-    // 客户��连接相关配置 - 修正前缀为source.influxDB
     public static final ConfigOption<String> INFLUXDB_URL =
             ConfigOptions.key("source.influxDB.client.URL")
                     .stringType()

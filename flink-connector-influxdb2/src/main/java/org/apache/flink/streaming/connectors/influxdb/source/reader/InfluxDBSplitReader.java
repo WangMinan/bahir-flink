@@ -66,7 +66,6 @@ public final class InfluxDBSplitReader implements SplitReader<DataPoint, InfluxD
     private final FutureCompletingBlockingQueue<List<DataPoint>> ingestionQueue;
     private InfluxDBSplit split;
 
-    // ▼▼▼▼▼ 第 2 处修改：修改整个构造函数 ▼▼▼▼▼
     public InfluxDBSplitReader(final Configuration configuration, List<String> whereCondition,
                                DataPointQueryResultDeserializer queryResultDeserializer, String url, String token, String org) {
         final int capacity = configuration.get(INGEST_QUEUE_CAPACITY);
