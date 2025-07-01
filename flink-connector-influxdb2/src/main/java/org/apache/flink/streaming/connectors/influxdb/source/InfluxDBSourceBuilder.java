@@ -51,6 +51,8 @@ public final class InfluxDBSourceBuilder<OUT> {
     private final Configuration configuration;
     private List<String> whereCondition;
     private String influxDBUrl;
+    private String influxDBUsername;
+    private String influxDBPassword;
     private String influxDBToken;
     private String bucketName;
     private String organizationName;
@@ -63,6 +65,8 @@ public final class InfluxDBSourceBuilder<OUT> {
 
     InfluxDBSourceBuilder() {
         this.influxDBUrl = null;
+        this.influxDBUsername = null;
+        this.influxDBPassword = null;
         this.influxDBToken = null;
         this.bucketName = null;
         this.deserializationSchema = null;
@@ -123,6 +127,30 @@ public final class InfluxDBSourceBuilder<OUT> {
     public InfluxDBSourceBuilder<OUT> setInfluxDBUrl(final String influxDBUrl) {
         this.influxDBUrl = influxDBUrl;
         this.configuration.set(INFLUXDB_URL, checkNotNull(influxDBUrl));
+        return this;
+    }
+
+    /**
+     * Sets the InfluxDB user name.
+     *
+     * @param influxDBUsername the user name of the InfluxDB instance.
+     * @return this InfluxDBSourceBuilder.
+     */
+    public InfluxDBSourceBuilder<OUT> setInfluxDBUsername(final String influxDBUsername) {
+        this.influxDBUsername = influxDBUsername;
+        this.configuration.set(INFLUXDB_USERNAME, checkNotNull(influxDBUsername));
+        return this;
+    }
+
+    /**
+     * Sets the InfluxDB password.
+     *
+     * @param influxDBPassword the password of the InfluxDB instance.
+     * @return this InfluxDBSourceBuilder.
+     */
+    public InfluxDBSourceBuilder<OUT> setInfluxDBPassword(final String influxDBPassword) {
+        this.influxDBPassword = influxDBPassword;
+        this.configuration.set(INFLUXDB_PASSWORD, checkNotNull(influxDBPassword));
         return this;
     }
 
@@ -235,8 +263,11 @@ public final class InfluxDBSourceBuilder<OUT> {
     private void sanityCheck() {
         checkNotNull(
                 this.deserializationSchema, "Deserialization schema is required but not provided.");
-        checkNotNull(
-                this.influxDBToken, "InfluxDB token is required but not provided."
+        // check that both username/password and token are not both provided for authentication
+        checkArgument(
+                !(this.influxDBToken != null
+                        && (this.influxDBUsername != null || this.influxDBPassword != null)),
+                "Either the InfluxDB username and password or InfluxDB token are required but both provided"
         );
         checkNotNull(this.bucketName, "The Bucket name is required but not provided.");
         checkNotNull(this.organizationName, "The Organization name is required but not provided.");

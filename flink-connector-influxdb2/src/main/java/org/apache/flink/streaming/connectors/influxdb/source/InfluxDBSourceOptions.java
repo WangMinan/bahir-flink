@@ -77,6 +77,18 @@ public final class InfluxDBSourceOptions {
                     .noDefaultValue()
                     .withDescription("InfluxDB Connection URL.");
 
+    public static final ConfigOption<String> INFLUXDB_USERNAME =
+            ConfigOptions.key("source.influxDB.client.username")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB username.");
+
+    public static final ConfigOption<String> INFLUXDB_PASSWORD =
+            ConfigOptions.key("source.influxDB.client.password")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("InfluxDB password.");
+
     public static final ConfigOption<String> INFLUXDB_TOKEN =
             ConfigOptions.key("source.influxDB.client.token")
                     .stringType()
@@ -94,4 +106,25 @@ public final class InfluxDBSourceOptions {
                     .stringType()
                     .noDefaultValue()
                     .withDescription("InfluxDB organization name.");
+
+    public static InfluxDBClient getInfluxDBClient(final Configuration configuration) {
+        final String url = configuration.get(INFLUXDB_URL);
+        final String username = configuration.get(INFLUXDB_USERNAME);
+        final String password = configuration.get(INFLUXDB_PASSWORD);
+        final String token = configuration.get(INFLUXDB_TOKEN);
+        final String bucket = configuration.get(INFLUXDB_BUCKET);
+        final String organization = configuration.get(INFLUXDB_ORGANIZATION);
+        InfluxDBClientOptions.Builder builder = InfluxDBClientOptions.builder();
+        builder = builder
+                .url(url)
+                .bucket(bucket)
+                .org(organization);
+        if (token != null) {
+            builder = builder.authenticateToken(token.toCharArray());
+        } else if (username != null && password != null) {
+            builder = builder.authenticate(username, password.toCharArray());
+        }
+        final InfluxDBClientOptions influxDBClientOptions = builder.build();
+        return InfluxDBClientFactory.create(influxDBClientOptions);
+    }
 }
