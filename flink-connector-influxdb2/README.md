@@ -54,6 +54,8 @@ flowchart LR
 
 您可以参考[InfluxDBSourceDemo.java](./src/test/java/org/apache/flink/streaming/connectors/influxdb/source/InfluxDBSourceDemo.java)中的用例查看具体用法
 
+如您所见，InfluxDBSource 依赖 v1 的 query 接口查询并解析数据，因此您需要为确认bucket有dbrp策略，请见[InfluxDB DBRP DOC](https://docs.influxdata.com/influxdb/v2/api-guide/influxdb-1x/dbrp/)
+
 ## Source(Bahir Former Version)
 
 The Source accepts data in the form of the [Line Protocol](https://docs.influxdata.com/influxdb/v2.0/reference/syntax/line-protocol/). One HTTP server per source instance is started. It parses HTTP requests to our Data Point class. That Data Point instance is deserialized by a user-provided implementation of our InfluxDBDataPointDeserializer and sent to the next Flink operator.
