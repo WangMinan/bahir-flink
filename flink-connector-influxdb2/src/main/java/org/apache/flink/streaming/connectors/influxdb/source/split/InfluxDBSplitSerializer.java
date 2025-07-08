@@ -63,8 +63,8 @@ public final class InfluxDBSplitSerializer implements SimpleVersionedSerializer<
             throw new IOException("Unsupported version: " + version);
         }
 
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(serialized);
-             DataInputStream in = new DataInputStream(bais)) {
+        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(serialized);
+             DataInputStream in = new DataInputStream(inputStream)) {
 
             // 读取所有字段
             String splitId = in.readUTF();

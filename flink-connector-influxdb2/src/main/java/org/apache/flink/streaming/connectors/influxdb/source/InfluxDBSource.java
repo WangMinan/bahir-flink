@@ -115,9 +115,8 @@ public final class InfluxDBSource<OUT>
 
     @Override
     public SourceReader<OUT, InfluxDBSplit> createReader(SourceReaderContext sourceReaderContext) {
-        // 第 3 处修改：修改这一行
         final Supplier<InfluxDBSplitReader> splitReaderSupplier =
-                () -> new InfluxDBSplitReader(configuration, whereCondition, queryResultDeserializer, influxDBUrl, influxDBToken, influxDBOrganization);
+                () -> new InfluxDBSplitReader(configuration, whereCondition, queryResultDeserializer);
 
         final InfluxDBRecordEmitter<OUT> recordEmitter =
                 new InfluxDBRecordEmitter<>(this.deserializationSchema);

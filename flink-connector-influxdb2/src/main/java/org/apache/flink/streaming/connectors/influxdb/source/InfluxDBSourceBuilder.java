@@ -25,12 +25,12 @@ import org.apache.flink.streaming.connectors.influxdb.source.reader.deserializer
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_BUCKET;
-import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_ORGANIZATION;
-import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_PASSWORD;
-import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_TOKEN;
-import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_URL;
-import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_USERNAME;
+import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INFLUXDB_BUCKET;
+import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INFLUXDB_ORGANIZATION;
+import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INFLUXDB_PASSWORD;
+import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INFLUXDB_TOKEN;
+import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INFLUXDB_URL;
+import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INFLUXDB_USERNAME;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 

@@ -37,12 +37,17 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INFLUXDB_ORGANIZATION;
+import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INFLUXDB_TOKEN;
+import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INFLUXDB_URL;
 import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSourceOptions.INGEST_QUEUE_CAPACITY;
 
 
@@ -52,7 +57,10 @@ import static org.apache.flink.streaming.connectors.influxdb.source.InfluxDBSour
  * <p>The returned type are in the format of {@link DataPoint}.
  */
 @Internal
-public final class InfluxDBSplitReader implements SplitReader<DataPoint, InfluxDBSplit> {
+public final class InfluxDBSplitReader implements SplitReader<DataPoint, InfluxDBSplit>, Serializable {
+
+    @Serial
+    private  static final long serialVersionUID = 1L;
 
     private static final Logger LOG = LoggerFactory.getLogger(InfluxDBSplitReader.class);
 
@@ -67,19 +75,22 @@ public final class InfluxDBSplitReader implements SplitReader<DataPoint, InfluxD
     private InfluxDBSplit split;
 
     public InfluxDBSplitReader(final Configuration configuration, List<String> whereCondition,
-                               DataPointQueryResultDeserializer queryResultDeserializer, String url, String token, String org) {
+                               DataPointQueryResultDeserializer queryResultDeserializer) {
         final int capacity = configuration.get(INGEST_QUEUE_CAPACITY);
         this.ingestionQueue = new FutureCompletingBlockingQueue<>(capacity);
 
         // 直接使用传入的参数构建客户端，不再依赖 getInfluxDBClient
-        this.influxDBClient = InfluxDBClientFactory.create(url, token.toCharArray(), org);
+        this.influxDBClient = InfluxDBClientFactory.create(
+                configuration.get(INFLUXDB_URL),
+                configuration.get(INFLUXDB_TOKEN).toCharArray(),
+                configuration.get(INFLUXDB_ORGANIZATION));
 
         this.whereCondition = whereCondition;
         this.queryResultDeserializer = queryResultDeserializer;
     }
 
     @Override
-    public RecordsWithSplitIds<DataPoint> fetch() throws IOException {
+    public RecordsWithSplitIds<DataPoint> fetch() {
         if (this.split == null) {
             return new RecordsBySplits.Builder<DataPoint>().build();
         }
