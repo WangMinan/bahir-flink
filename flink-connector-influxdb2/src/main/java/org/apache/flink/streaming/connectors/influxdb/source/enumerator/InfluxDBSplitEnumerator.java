@@ -179,7 +179,7 @@ public class InfluxDBSplitEnumerator implements SplitEnumerator<InfluxDBSplit, I
             // 分配一个分片
             InfluxDBSplit split = unassignedSplits.removeFirst();
             context.assignSplit(split, subtaskId);
-            LOG.info("Assigned split {} to subtask {}", split, subtaskId);
+            LOG.debug("Assigned split {} to subtask {}", split, subtaskId);
         }
     }
 
@@ -191,7 +191,7 @@ public class InfluxDBSplitEnumerator implements SplitEnumerator<InfluxDBSplit, I
             InfluxDBSplit split = unassignedSplits.removeFirst();
             context.assignSplit(split, entry.getKey());
             iterator.remove();
-            LOG.info("Assigned split {} to waiting subtask {}", split, entry.getKey());
+            LOG.debug("Assigned split {} to waiting subtask {}", split, entry.getKey());
         }
     }
 
