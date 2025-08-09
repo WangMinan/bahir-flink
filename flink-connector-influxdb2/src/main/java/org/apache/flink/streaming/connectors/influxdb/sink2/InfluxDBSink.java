@@ -19,11 +19,10 @@ package org.apache.flink.streaming.connectors.influxdb.sink2;
 
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.sink2.SinkWriter;
+import org.apache.flink.api.connector.sink2.WriterInitContext;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.connectors.influxdb.sink2.writer.InfluxDBSchemaSerializer;
 import org.apache.flink.streaming.connectors.influxdb.sink2.writer.InfluxDBWriter;
-
-import java.io.IOException;
 
 public class InfluxDBSink<IN> implements Sink<IN> {
 
@@ -47,8 +46,23 @@ public class InfluxDBSink<IN> implements Sink<IN> {
     }
 
 
+    /**
+     * 为了兼容性的保留，上层方法已标记为弃用
+     *
+     * @param initContext 初始化上下文
+     * @return InfluxDBWriter实例
+     */
     @Override
-    public SinkWriter<IN> createWriter(InitContext initContext) throws IOException {
+    @Deprecated
+    public SinkWriter<IN> createWriter(InitContext initContext) {
+        final InfluxDBWriter<IN> writer =
+                new InfluxDBWriter<>(this.influxDBSchemaSerializer, this.configuration);
+        writer.setProcessingTimerService(initContext.getProcessingTimeService());
+        return writer;
+    }
+
+    @Override
+    public SinkWriter<IN> createWriter(WriterInitContext initContext) {
         final InfluxDBWriter<IN> writer =
                 new InfluxDBWriter<>(this.influxDBSchemaSerializer, this.configuration);
         writer.setProcessingTimerService(initContext.getProcessingTimeService());

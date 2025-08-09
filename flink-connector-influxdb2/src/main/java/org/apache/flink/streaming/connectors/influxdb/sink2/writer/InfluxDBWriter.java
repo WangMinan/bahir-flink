@@ -32,10 +32,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.BATCH_INTERVAL_MS;
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.WRITE_BUFFER_SIZE;
@@ -52,10 +48,10 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
     private final List<Point> elements;
     private final InfluxDBSchemaSerializer<IN> schemaSerializer;
     private final InfluxDBClient influxDBClient;
+    private final long batchIntervalMs;
 
     // 定时线程池
-    private final ScheduledExecutorService scheduler;
-    private ScheduledFuture<?> scheduledFuture;
+    private ProcessingTimeService processingTimeService;
     private final Object lock = new Object();
     private volatile boolean closed = false;
 
@@ -63,30 +59,33 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
             final InfluxDBSchemaSerializer<IN> schemaSerializer,
             final Configuration configuration) {
         this.schemaSerializer = schemaSerializer;
-        this.bufferSize = configuration.getInteger(WRITE_BUFFER_SIZE);
-        long batchIntervalMs = configuration.getLong(BATCH_INTERVAL_MS);
+        this.bufferSize = configuration.get(WRITE_BUFFER_SIZE);
+        this.batchIntervalMs = configuration.get(BATCH_INTERVAL_MS);
         this.elements = new ArrayList<>(this.bufferSize);
-        this.writeCheckpoint = configuration.getBoolean(WRITE_DATA_POINT_CHECKPOINT);
+        this.writeCheckpoint = configuration.get(WRITE_DATA_POINT_CHECKPOINT);
         this.influxDBClient = getInfluxDBClient(configuration);
-
-        // 初始化定时线程池
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "influxdb-writer-timer");
-            t.setDaemon(true);
-            return t;
-        });
-
-        // 启动定时任务
-        this.scheduledFuture = this.scheduler.scheduleWithFixedDelay(
-                this::flushBuffer,
-                batchIntervalMs,
-                batchIntervalMs,
-                TimeUnit.MILLISECONDS);
     }
 
     // 为了兼容性保留此方法
     public void setProcessingTimerService(final ProcessingTimeService processingTimerService) {
         // 这个方法保留但为空，不再使用ProcessingTimeService
+        this.processingTimeService = processingTimerService;
+        if (processingTimerService != null) {
+            LOG.debug("ProcessingTimeService is set, scheduling next flush.");
+            scheduleNextFlush(); // 调度下一个刷新
+        } else {
+            LOG.warn("ProcessingTimeService is not set, timer-based flushing will not be used.");
+        }
+    }
+
+    private void scheduleNextFlush() {
+        if (processingTimeService != null) {
+            long nextFlushTime = processingTimeService.getCurrentProcessingTime() + batchIntervalMs;
+            processingTimeService.registerTimer(nextFlushTime, timestamp -> {
+                flushBuffer();
+                scheduleNextFlush(); // 递归调度下一次刷新
+            });
+        }
     }
 
     // 定时器调用的方法
@@ -162,25 +161,6 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
                 return;
             }
             closed = true;
-
-            // 取消定时任务
-            if (scheduledFuture != null) {
-                scheduledFuture.cancel(false);
-                scheduledFuture = null;
-            }
-
-            // 关闭线程池
-            if (scheduler != null) {
-                scheduler.shutdown();
-                try {
-                    if (!scheduler.awaitTermination(10, TimeUnit.SECONDS)) {
-                        scheduler.shutdownNow();
-                    }
-                } catch (InterruptedException e) {
-                    scheduler.shutdownNow();
-                    Thread.currentThread().interrupt();
-                }
-            }
 
             LOG.debug("Preparing to write the remaining elements in InfluxDB.");
             this.writeCurrentElements();
