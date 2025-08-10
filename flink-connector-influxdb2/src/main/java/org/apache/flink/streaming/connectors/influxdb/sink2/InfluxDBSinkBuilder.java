@@ -28,6 +28,8 @@ import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkO
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_TOKEN;
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_URL;
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.INFLUXDB_USERNAME;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.LINE_TXT_FILE_PATH;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.SAVE_LINE_PROTOCOL_TXT_LOCALLY_ON_FAILURE;
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.WRITE_BUFFER_SIZE;
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.WRITE_DATA_POINT_CHECKPOINT;
 import static org.apache.flink.util.Preconditions.checkArgument;
@@ -86,7 +88,7 @@ public final class InfluxDBSinkBuilder<IN> {
      */
     public InfluxDBSinkBuilder<IN> setInfluxDBUrl(final String influxDBUrl) {
         this.influxDBUrl = influxDBUrl;
-        this.configuration.setString(INFLUXDB_URL, checkNotNull(influxDBUrl));
+        this.configuration.set(INFLUXDB_URL, checkNotNull(influxDBUrl));
         return this;
     }
 
@@ -98,7 +100,7 @@ public final class InfluxDBSinkBuilder<IN> {
      */
     public InfluxDBSinkBuilder<IN> setInfluxDBUsername(final String influxDBUsername) {
         this.influxDBUsername = influxDBUsername;
-        this.configuration.setString(INFLUXDB_USERNAME, checkNotNull(influxDBUsername));
+        this.configuration.set(INFLUXDB_USERNAME, checkNotNull(influxDBUsername));
         return this;
     }
 
@@ -110,7 +112,7 @@ public final class InfluxDBSinkBuilder<IN> {
      */
     public InfluxDBSinkBuilder<IN> setInfluxDBPassword(final String influxDBPassword) {
         this.influxDBPassword = influxDBPassword;
-        this.configuration.setString(INFLUXDB_PASSWORD, checkNotNull(influxDBPassword));
+        this.configuration.set(INFLUXDB_PASSWORD, checkNotNull(influxDBPassword));
         return this;
     }
 
@@ -122,7 +124,7 @@ public final class InfluxDBSinkBuilder<IN> {
      */
     public InfluxDBSinkBuilder<IN> setInfluxDBToken(final String influxDBToken) {
         this.influxDBToken = influxDBToken;
-        this.configuration.setString(INFLUXDB_TOKEN, checkNotNull(influxDBToken));
+        this.configuration.set(INFLUXDB_TOKEN, checkNotNull(influxDBToken));
         return this;
     }
 
@@ -134,7 +136,7 @@ public final class InfluxDBSinkBuilder<IN> {
      */
     public InfluxDBSinkBuilder<IN> setInfluxDBBucket(final String bucketName) {
         this.bucketName = bucketName;
-        this.configuration.setString(INFLUXDB_BUCKET, checkNotNull(bucketName));
+        this.configuration.set(INFLUXDB_BUCKET, checkNotNull(bucketName));
         return this;
     }
 
@@ -146,7 +148,7 @@ public final class InfluxDBSinkBuilder<IN> {
      */
     public InfluxDBSinkBuilder<IN> setInfluxDBOrganization(final String organizationName) {
         this.organizationName = organizationName;
-        this.configuration.setString(INFLUXDB_ORGANIZATION, checkNotNull(organizationName));
+        this.configuration.set(INFLUXDB_ORGANIZATION, checkNotNull(organizationName));
         return this;
     }
 
@@ -172,7 +174,7 @@ public final class InfluxDBSinkBuilder<IN> {
      * @return this InfluxDBSinkBuilder.
      */
     public InfluxDBSinkBuilder<IN> addCheckpointDataPoint(final boolean shouldWrite) {
-        this.configuration.setBoolean(WRITE_DATA_POINT_CHECKPOINT, shouldWrite);
+        this.configuration.set(WRITE_DATA_POINT_CHECKPOINT, shouldWrite);
         return this;
     }
 
@@ -187,7 +189,7 @@ public final class InfluxDBSinkBuilder<IN> {
         if (bufferSize <= 0) {
             throw new IllegalArgumentException("The buffer size should be greater than 0.");
         }
-        this.configuration.setInteger(WRITE_BUFFER_SIZE, bufferSize);
+        this.configuration.set(WRITE_BUFFER_SIZE, bufferSize);
         return this;
     }
 
@@ -202,9 +204,35 @@ public final class InfluxDBSinkBuilder<IN> {
         if (batchIntervalMs <= 0) {
             throw new IllegalArgumentException("The batch interval must be greater than 0 milliseconds.");
         }
-        this.configuration.setLong(BATCH_INTERVAL_MS, batchIntervalMs);
+        this.configuration.set(BATCH_INTERVAL_MS, batchIntervalMs);
         return this;
     }
+
+    /**
+     * Sets whether to save TXT files locally on failure.
+     *
+     * @param saveLineProtocolTxt true if TXT files should be saved locally on failure, false otherwise.
+     * @return this InfluxDBSinkBuilder.
+     */
+    public InfluxDBSinkBuilder<IN> setSaveLineProtocolTxtLocallyOnFailure(final boolean saveLineProtocolTxt) {
+        this.configuration.set(SAVE_LINE_PROTOCOL_TXT_LOCALLY_ON_FAILURE, saveLineProtocolTxt);
+        // 先设置默认值
+        this.configuration.set(LINE_TXT_FILE_PATH, LINE_TXT_FILE_PATH.defaultValue());
+        return this;
+    }
+
+    /**
+     * Sets the file path where TXT files should be saved locally on failure.
+     *
+     * @param txtFilePath the file path for saving TXT files.
+     * @return this InfluxDBSinkBuilder.
+     */
+    public InfluxDBSinkBuilder<IN> setTxtFilePath(final String txtFilePath) {
+        checkNotNull(txtFilePath, "TXT file path cannot be null.");
+        this.configuration.set(InfluxDBSinkOptions.LINE_TXT_FILE_PATH, txtFilePath);
+        return this;
+    }
+
 
     /**
      * Build the {@link org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSink}.
@@ -218,7 +246,9 @@ public final class InfluxDBSinkBuilder<IN> {
 
     // ------------- private helpers  --------------
 
-    /** Checks if the SchemaSerializer and the influxDBConfig are not null and set. */
+    /**
+     * Checks if the SchemaSerializer and the influxDBConfig are not null and set.
+     */
     private void sanityCheck() {
         // Check required settings.
         checkNotNull(this.influxDBUrl, "The InfluxDB URL is required but not provided.");
@@ -230,7 +260,7 @@ public final class InfluxDBSinkBuilder<IN> {
         );
         // check that both username/password and token are not both provided for authentication
         checkArgument(
-                ! (this.influxDBToken != null
+                !(this.influxDBToken != null
                         && (this.influxDBUsername != null || this.influxDBPassword != null)),
                 "Either the InfluxDB username and password or InfluxDB token are required but both provided"
         );
@@ -239,5 +269,21 @@ public final class InfluxDBSinkBuilder<IN> {
         checkNotNull(
                 this.influxDBSchemaSerializer,
                 "Serialization schema is required but not provided.");
+        // Check if the TXT file path is set when saving TXT files locally on failure
+        if (this.configuration.get(SAVE_LINE_PROTOCOL_TXT_LOCALLY_ON_FAILURE)) {
+            checkNotNull(
+                    this.configuration.get(InfluxDBSinkOptions.LINE_TXT_FILE_PATH),
+                    "TXT file path must be set when saving TXT files locally on failure.");
+        }
+        // Check if the batch interval is set to a valid value
+        long batchIntervalMs = this.configuration.get(BATCH_INTERVAL_MS);
+        checkArgument(
+                batchIntervalMs > 0,
+                "Batch interval must be greater than 0 milliseconds, but was: " + batchIntervalMs);
+        // Check if the write buffer size is set to a valid value
+        int writeBufferSize = this.configuration.get(WRITE_BUFFER_SIZE);
+        checkArgument(
+                writeBufferSize > 0,
+                "Write buffer size must be greater than 0, but was: " + writeBufferSize);
     }
 }

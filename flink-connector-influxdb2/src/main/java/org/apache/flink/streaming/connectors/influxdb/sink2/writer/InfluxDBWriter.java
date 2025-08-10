@@ -27,13 +27,21 @@ import org.apache.flink.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.BATCH_INTERVAL_MS;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.LINE_TXT_FILE_PATH;
+import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.SAVE_LINE_PROTOCOL_TXT_LOCALLY_ON_FAILURE;
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.WRITE_BUFFER_SIZE;
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.WRITE_DATA_POINT_CHECKPOINT;
 import static org.apache.flink.streaming.connectors.influxdb.sink2.InfluxDBSinkOptions.getInfluxDBClient;
@@ -49,6 +57,8 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
     private final InfluxDBSchemaSerializer<IN> schemaSerializer;
     private final InfluxDBClient influxDBClient;
     private final long batchIntervalMs;
+    private final Boolean saveLineTxtLocallyOnFailure;
+    private final String lineTxtFilePath;
 
     // 定时线程池
     private ProcessingTimeService processingTimeService;
@@ -61,6 +71,8 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
         this.schemaSerializer = schemaSerializer;
         this.bufferSize = configuration.get(WRITE_BUFFER_SIZE);
         this.batchIntervalMs = configuration.get(BATCH_INTERVAL_MS);
+        this.saveLineTxtLocallyOnFailure = configuration.get(SAVE_LINE_PROTOCOL_TXT_LOCALLY_ON_FAILURE);
+        this.lineTxtFilePath = configuration.get(LINE_TXT_FILE_PATH);
         this.elements = new ArrayList<>(this.bufferSize);
         this.writeCheckpoint = configuration.get(WRITE_DATA_POINT_CHECKPOINT);
         this.influxDBClient = getInfluxDBClient(configuration);
@@ -185,6 +197,76 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
             LOG.debug("Wrote {} data points", toWrite.size());
         } catch (Exception e) {
             LOG.error("Error writing data points to InfluxDB", e);
+            // save data points to local txt
+            if (saveLineTxtLocallyOnFailure) {
+                saveDataPointsInLineProtocol(toWrite);
+            }
+        }
+    }
+
+    private void saveDataPointsInLineProtocol(List<Point> toWrite) {
+        LOG.info("Saving data points when encountered failure enabled, writing data points to local txt file at {}", lineTxtFilePath);
+        File lineTxtFile = new File(lineTxtFilePath);
+        // 检查并创建目录和文件
+        if (!lineTxtFile.exists()) {
+            try {
+                // 检查并创建父目录
+                File parentDir = lineTxtFile.getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    if (parentDir.mkdirs()) {
+                        LOG.info("Parent directories created for {}", lineTxtFilePath);
+                    } else {
+                        LOG.error("Failed to create parent directories for {}", lineTxtFilePath);
+                        return;
+                    }
+                }
+                if (lineTxtFile.createNewFile()) {
+                    LOG.info("Txt file created at {}", lineTxtFilePath);
+                } else {
+                    LOG.error("Failed to create Txt file at {}", lineTxtFilePath);
+                    return;
+                }
+            } catch (IOException ioException) {
+                LOG.error("Error creating Txt file at {}", lineTxtFilePath, ioException);
+                return;
+            }
+        }
+        if (!lineTxtFile.canWrite()) {
+            LOG.error("Cannot write to Txt file at {}, please check the permissions.", lineTxtFilePath);
+            return;
+        }
+        // 使用FileChannel和FileLock
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(lineTxtFile, "rw");
+             FileChannel channel = randomAccessFile.getChannel()) {
+            // 尝试获取文件锁
+            FileLock lock = null;
+            try {
+                lock = channel.lock();
+                channel.position(channel.size());
+                StringBuilder contentBuilder = new StringBuilder();
+                for (Point point : toWrite) {
+                    contentBuilder.append(point.toLineProtocol())
+                            .append(System.lineSeparator());
+                }
+                // 写入内容
+                ByteBuffer buffer = ByteBuffer.wrap(contentBuilder.toString().getBytes(StandardCharsets.UTF_8));
+                while (buffer.hasRemaining()) {
+                    int write = channel.write(buffer);
+                    if (write == 0) {
+                        LOG.warn("No bytes were written to the file: {}, possible I/O issue.", lineTxtFilePath);
+                        break;
+                    }
+                }
+                // 确保数据被写入磁盘
+                channel.force(true);
+            } finally {
+                // 释放锁
+                if (lock != null && lock.isValid()) {
+                    lock.release();
+                }
+            }
+        } catch (IOException ex) {
+            LOG.error("Error writing to Txt file at {}, some data points will be lost.", lineTxtFilePath, ex);
         }
     }
 }

@@ -85,6 +85,21 @@ public final class InfluxDBSinkOptions {
                     .noDefaultValue()
                     .withDescription("InfluxDB organization name.");
 
+    public static final ConfigOption<Boolean> SAVE_LINE_PROTOCOL_TXT_LOCALLY_ON_FAILURE =
+            ConfigOptions.key("sink.influxDB.write.save.line.txt.on.failure")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription(
+                            "If true, saves the txt file in line protocol locally on failure. This is useful for debugging and recovery.");
+
+    public static final ConfigOption<String> LINE_TXT_FILE_PATH =
+            ConfigOptions.key("sink.influxDB.write.line.txt.file.path")
+                    .stringType()
+                    .defaultValue(System.getProperty("java.io.tmpdir", "/tmp") +
+                            "/influxdb-failure-" + System.currentTimeMillis() + ".txt")
+                    .withDescription(
+                            "Path to save the txt file in line protocol locally on failure. Only used if 'save.csv.on.failure' is true.");
+
     public static InfluxDBClient getInfluxDBClient(final Configuration configuration) {
         final String url = configuration.get(INFLUXDB_URL);
         final String username = configuration.get(INFLUXDB_USERNAME);
