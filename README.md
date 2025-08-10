@@ -52,7 +52,7 @@ can be run using:
 
 ## 对于本fork的说明
 
-王旻安正在维护这个fork以使flink-connector-influxdb2的连接器继续可用，目前正在适配的版本为 flink 1.20.0 LTS 与 influxdb 2.7 OSS
+王旻安正在维护这个fork以使flink-connector-influxdb2的连接器继续可用，目前正在适配的版本为 flink 1.20 LTS 与 influxdb 2.7 OSS
 
 王旻安模仿 flink-connector-jdbc 重写了整个InfluxDBSource的逻辑以剥离Telegraf，现在InfluxDBSource会根据时间进行分片从指定的bucket-measurement中拉取数据
 
