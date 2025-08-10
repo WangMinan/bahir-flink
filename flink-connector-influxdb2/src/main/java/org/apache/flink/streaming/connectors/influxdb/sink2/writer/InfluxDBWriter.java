@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -246,7 +247,7 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
                 StringBuilder contentBuilder = new StringBuilder();
                 for (Point point : toWrite) {
                     contentBuilder.append(point.toLineProtocol())
-                            .append(System.lineSeparator());
+                            .append(FileSystems.getDefault().getSeparator());
                 }
                 // 写入内容
                 ByteBuffer buffer = ByteBuffer.wrap(contentBuilder.toString().getBytes(StandardCharsets.UTF_8));
