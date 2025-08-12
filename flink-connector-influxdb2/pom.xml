@@ -25,13 +25,13 @@ under the License.
     <parent>
         <groupId>org.apache.bahir</groupId>
         <artifactId>bahir-flink-parent</artifactId>
-        <version>1.2</version>
+        <version>1.2.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <groupId>io.github.wangminan</groupId>
     <artifactId>flink-connector-influxdb2</artifactId>
-    <version>1.2</version>
+    <version>1.2.1</version>
     <packaging>jar</packaging>
 
     <name>Flink InfluxDB2 Connector (Fork)</name>
@@ -106,44 +106,61 @@ under the License.
         <dependency>
             <groupId>com.google.http-client</groupId>
             <artifactId>google-http-client</artifactId>
+            <version>${google.http.client.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.influxdb</groupId>
             <artifactId>influxdb-client-java</artifactId>
+            <version>${influxdbClient.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.druid.extensions</groupId>
             <artifactId>druid-influx-extensions</artifactId>
+            <version>${druid.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-connector-base</artifactId>
+            <version>${flink.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-core</artifactId>
+            <version>${flink.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-streaming-java</artifactId>
             <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-test-utils</artifactId>
+            <version>${flink.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>influxdb</artifactId>
+            <version>${testcontainers.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
         </dependency>
     </dependencies>
 
@@ -163,6 +180,20 @@ under the License.
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>${maven-javadoc-plugin.version}</version>
                 <executions>
@@ -172,18 +203,16 @@ under the License.
                         <goals>
                             <goal>jar</goal>
                         </goals>
+                        <configuration>
+                            <maxmemory>1024</maxmemory>
+                            <encoding>UTF-8</encoding>
+                            <show>protected</show>
+                            <notree>true</notree>
+                            <failOnError>false</failOnError>
+                            <additionalJOption>-Xdoclint:none</additionalJOption>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <maxmemory>1024</maxmemory>
-                    <encoding>UTF-8</encoding>
-                    <show>protected</show>
-                    <notree>true</notree>
-                    <!-- Avoid running into Java 8's very restrictive doclint issues -->
-                    <failOnError>false</failOnError>
-                    <!-- 关闭javadoc报错 老项目都是屎山没办法 -->
-                    <additionalJOption>-Xdoclint:none</additionalJOption>
-                </configuration>
             </plugin>
 
             <plugin>
@@ -203,14 +232,12 @@ under the License.
                 <executions>
                     <execution>
                         <id>sign-artifacts</id>
-                        <!-- 这个谓词不能动 只能verify -->
                         <phase>verify</phase>
                         <goals>
                             <goal>sign</goal>
                         </goals>
                         <configuration>
                             <skip>${gpg.skip}</skip>
-                            <!-- 确保签名所有文件 -->
                             <gpgArguments>
                                 <arg>--pinentry-mode</arg>
                                 <arg>loopback</arg>
