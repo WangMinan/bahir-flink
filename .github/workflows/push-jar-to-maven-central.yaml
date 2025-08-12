@@ -69,10 +69,21 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
+      - name: Download gpg public key
+        run: gpg --keyserver keyserver.ubuntu.com --recv-keys ${{ secrets.GPG_PUBLIC_KEY_ID }}
+
+      - id: install-secret-key
+        name: Install gpg secret key
+        run: |
+          # Install gpg secret key
+          cat <(echo -e "${{ secrets.GPG_PRIVATE_KEY }}") | gpg --batch --import
+          # Verify gpg secret key
+          gpg --list-secret-keys --keyid-format LONG
+
       - name: Set up git
         run: |
-          git config --global user.name "WangMinan"
-          git config --global user.email "wangminan0811@hotmail.com"
+          git config --global user.name "wangminan0811@hotmail.com"
+          git config --global user.email "wangminan"
 
       - name: Build and deploy with Maven
         if: ${{ steps.version_check.outputs.VERSION_CHANGED == 'true' }}
