@@ -1,0 +1,92 @@
+name: push-jar-to-maven-central
+on:
+  push:
+    paths:
+      # 修正路径监听配置
+      - 'flink-connector-influxdb2/pom.xml'
+    branches:
+      - master
+
+permissions: write-all
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+      MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+      MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: 'master'  # 改为master分支
+          submodules: 'recursive'
+          fetch-depth: 0
+
+      - name: Get the version from pom.xml before and after commit
+        id: version_check
+        run: |
+          # 获取提交前后的pom.xml版本信息
+          PREVIOUS_VERSION=$(git show HEAD~1:./flink-connector-influxdb2/pom.xml | grep -oP '(?<=<version>)(.*?)(?=</version>)' | head -n 1)
+          CURRENT_VERSION=$(cat ./flink-connector-influxdb2/pom.xml | grep -oP '(?<=<version>)(.*?)(?=</version>)' | head -n 1)
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          if [ "$PREVIOUS_VERSION" != "$CURRENT_VERSION" ]; then
+            echo "Version changed: $PREVIOUS_VERSION -> $CURRENT_VERSION"
+            echo "VERSION_CHANGED=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version not changed"
+            echo "VERSION_CHANGED=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Graal JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'graalvm'
+          cache: 'maven'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Set up git
+        run: |
+          git config --global user.name "WangMinan"
+          git config --global user.email "wangminan0811@hotmail.com"
+
+      - name: Build and deploy with Maven
+        if: ${{ steps.version_check.outputs.VERSION_CHANGED == 'true' }}
+        run: |
+          # 只构建和部署influxdb2模块
+          mvn -B -pl flink-connector-influxdb2 -am clean deploy -Dmaven.test.skip=true
+
+      - name: Tag the latest commit
+        if: ${{ steps.version_check.outputs.VERSION_CHANGED == 'true' }}
+        run: |
+          git tag -a "influxdb2-${{ steps.version_check.outputs.CURRENT_VERSION }}" -m "InfluxDB2 Connector Version ${{ steps.version_check.outputs.CURRENT_VERSION }}"
+          git push origin "influxdb2-${{ steps.version_check.outputs.CURRENT_VERSION }}"
+
+      - name: Generate change log
+        if: ${{ steps.version_check.outputs.VERSION_CHANGED == 'true' }}
+        run: |
+          npm install -g auto-changelog
+          auto-changelog -u
+
+      - name: Create a release
+        if: ${{ steps.version_check.outputs.VERSION_CHANGED == 'true' }}
+        run: |
+          mkdir -p build
+          # 复制正确的构建产物
+          cp flink-connector-influxdb2/target/*.jar build/
+          cp flink-connector-influxdb2/target/*.jar.asc build/
+          cp flink-connector-influxdb2/target/*.pom build/
+          cp flink-connector-influxdb2/target/*.pom.asc build/
+          # 创建发布
+          gh release create "influxdb2-${{ steps.version_check.outputs.CURRENT_VERSION }}" \
+            --title "InfluxDB2 Connector v${{ steps.version_check.outputs.CURRENT_VERSION }}" \
+            --notes-file CHANGELOG.md \
+            build/*

@@ -56,6 +56,6 @@ can be run using:
 
 王旻安模仿 flink-connector-jdbc 重写了整个InfluxDBSource的逻辑以剥离Telegraf，现在InfluxDBSource会根据时间进行分片从指定的bucket-measurement中拉取数据
 
-王旻安模仿 flink-connector-jdbc 修正了InfluxDBSink的部分逻辑，添加了定时flush数据的功能
+王旻安模仿 flink-connector-jdbc 修正了InfluxDBSink的部分逻辑，添加了定时flush数据的功能，同时还提供了远程写入失败后在本地创建data point文件的可选开关
 
     mvn -Dmaven.test.skip=true -Dcheckstyle.skip=true install

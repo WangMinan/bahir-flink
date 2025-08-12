@@ -29,16 +29,47 @@ under the License.
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <groupId>io.github.wangminan</groupId>
     <artifactId>flink-connector-influxdb2</artifactId>
+    <version>1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>flink-connector-influxdb2</name>
+    <name>Flink InfluxDB2 Connector (Fork)</name>
+    <description>Apache Flink connector for InfluxDB2, forked from Apache Bahir</description>
+    <url>https://github.com/WangMinan/bahir-flink/tree/master/flink-connector-influxdb2</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>wangminan</id>
+            <name>Wang Minan</name>
+            <email>wangminan0811@hotmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/WangMinan/bahir-flink.git</connection>
+        <developerConnection>scm:git:ssh://github.com:WangMinan/bahir-flink.git</developerConnection>
+        <url>http://github.com/WangMinan/bahir-flink/tree/master/flink-connector-influxdb2</url>
+    </scm>
 
     <properties>
         <influxdbClient.version>7.3.0</influxdbClient.version>
         <druid.version>0.13.0-incubating</druid.version>
         <!--  Test Properties  -->
         <google.http.client.version>1.39.0</google.http.client.version>
+        <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
+        <central-publishing-maven-plugin.version>0.7.0</central-publishing-maven-plugin.version>
+        <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
+        <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
+        <gpg.skip>false</gpg.skip>
     </properties>
 
     <dependencyManagement>
@@ -128,6 +159,75 @@ under the License.
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven-javadoc-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <maxmemory>1024</maxmemory>
+                    <encoding>UTF-8</encoding>
+                    <show>protected</show>
+                    <notree>true</notree>
+                    <!-- Avoid running into Java 8's very restrictive doclint issues -->
+                    <failOnError>false</failOnError>
+                    <!-- 关闭javadoc报错 老项目都是屎山没办法 -->
+                    <additionalJOption>-Xdoclint:none</additionalJOption>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${central-publishing-maven-plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>${maven-gpg-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <!-- 这个谓词不能动 只能verify -->
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${gpg.skip}</skip>
+                            <!-- 确保签名所有文件 -->
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven-release-plugin.version}</version>
+                <configuration>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                </configuration>
             </plugin>
         </plugins>
     </build>
