@@ -130,7 +130,7 @@
 
         <!-- General dependencies version -->
         <log4j.version>2.17.1</log4j.version>
-        <junit.jupiter.version>5.4.1</junit.jupiter.version>
+        <junit.jupiter.version>5.13.4</junit.jupiter.version>
         <mockito.version>1.10.19</mockito.version>
         <scalacheck.version>1.14.0</scalacheck.version>
         <scalatest.version>3.0.5</scalatest.version>
