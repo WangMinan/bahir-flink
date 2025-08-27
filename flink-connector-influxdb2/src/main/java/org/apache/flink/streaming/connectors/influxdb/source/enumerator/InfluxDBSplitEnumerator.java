@@ -219,5 +219,6 @@ public class InfluxDBSplitEnumerator implements SplitEnumerator<InfluxDBSplit, I
     @Override
     public void close() {
         // 没有需要关闭的资源
+        LOG.info("Closing all splits");
     }
 }

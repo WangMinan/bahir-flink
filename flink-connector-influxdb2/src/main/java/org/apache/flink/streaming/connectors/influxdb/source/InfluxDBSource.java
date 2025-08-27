@@ -71,11 +71,6 @@ public final class InfluxDBSource<OUT>
     private final Boundedness boundedness;
     private final DataPointQueryResultDeserializer queryResultDeserializer;
 
-    //第 1 处修改：
-    private final String influxDBUrl;
-    private final String influxDBToken;
-    private final String influxDBOrganization;
-
 
     InfluxDBSource(
             Configuration configuration,
@@ -98,9 +93,6 @@ public final class InfluxDBSource<OUT>
         this.splitDuration = splitDuration;
         this.queryResultDeserializer = queryResultDeserializer;
         this.boundedness = boundedness;
-        this.influxDBUrl = configuration.get(InfluxDBSinkOptions.INFLUXDB_URL, null);
-        this.influxDBToken = configuration.get(InfluxDBSinkOptions.INFLUXDB_TOKEN, null);
-        this.influxDBOrganization = configuration.get(InfluxDBSinkOptions.INFLUXDB_ORGANIZATION, null);
     }
 
     // builder
