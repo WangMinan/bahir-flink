@@ -1,0 +1,1 @@
+GET http://10.168.3.101:8080/task/dataAsset/querySortiesByBatchId?batchId=1
