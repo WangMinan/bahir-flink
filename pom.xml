@@ -132,7 +132,7 @@
         <log4j.version>2.17.1</log4j.version>
         <junit.jupiter.version>5.13.4</junit.jupiter.version>
         <mockito.version>1.10.19</mockito.version>
-        <scalacheck.version>1.14.0</scalacheck.version>
+        <scalacheck.version>1.18.1</scalacheck.version>
         <scalatest.version>3.3.0-SNAP4</scalatest.version>
         <testcontainers.version>1.21.3</testcontainers.version>
 
