@@ -61,7 +61,7 @@ under the License.
     </scm>
 
     <properties>
-        <influxdbClient.version>7.3.0</influxdbClient.version>
+        <influxdbClient.version>7.4.0</influxdbClient.version>
         <druid.version>0.13.0-incubating</druid.version>
         <!--  Test Properties  -->
         <google.http.client.version>2.0.0</google.http.client.version>
