@@ -19,6 +19,7 @@ package org.apache.flink.streaming.connectors.influxdb.sink2.writer;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.WriteApi;
+import com.influxdb.client.WriteOptions;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import org.apache.flink.api.common.operators.ProcessingTimeService;
@@ -193,7 +194,15 @@ public class InfluxDBWriter<IN> implements SinkWriter<IN> {
         LOG.debug("Writing {} data points to InfluxDB", toWrite.size());
         if (toWrite.isEmpty()) return;
 
-        try (final WriteApi writeApi = this.influxDBClient.makeWriteApi()) {
+        WriteOptions.Builder builder = WriteOptions.builder()
+                // 我们不判断buffer limit和反压 这是cloud模式才考虑的问题 我只要一次性写入
+                .batchSize(this.bufferSize);
+        if (this.batchIntervalMs < Integer.MAX_VALUE) {
+            builder.flushInterval(Math.toIntExact(this.batchIntervalMs));
+        }
+        WriteOptions options = builder.build();
+
+        try (final WriteApi writeApi = this.influxDBClient.makeWriteApi(options)) {
             writeApi.writePoints(toWrite);
             LOG.debug("Wrote {} data points", toWrite.size());
         } catch (Exception e) {
